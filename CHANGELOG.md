@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0-alpha.2 — 2026-10-18
+
+Candidate: settings now opens inside the main window. An authored gear icon to the left of PIN replaces Manage shortcuts/workflows. Back returns to the library with the existing unsaved-edit confirmation. General, Shortcuts and Workflows reuse the native editor as a child panel, including import/export. Escape and unpinned focus loss hide to tray and preserve drafts; exiting still checks pending edits while hidden. Native scrolling and keyboard focus reveal support smaller windows. No schema change or new dependency. Manual acceptance pending; no tests added or run.
+
+
 ## 0.3.0-alpha.1 — 2026-10-18
 
 Candidate: portable per-application collections. Import/export actions in Shortcuts and Workflows transfer saved shortcuts, workflow Markdown and referenced PNG images in a versioned JSON file. Import previews application identity and counts; Add skips exact duplicates, while Replace changes only the matching application after confirmation. Global settings and other applications are preserved.
