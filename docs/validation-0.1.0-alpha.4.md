@@ -8,3 +8,7 @@ Tratamento nativo de WM_LBUTTONDBLCLK com verificação da linha e uso do mesmo 
 Build Release x64 compilada com sucesso via scripts/build.ps1 -SkipTests. Testes automatizados e interação manual não foram executados nesta alteração.
 Aceitação pendente: clique simples não executa; clique duplo executa uma vez no destino correto; duplo clique na área vazia não executa; Execute e Enter continuam funcionando; troca de aplicativo não envia ao destino errado.
 Gitflow: feature/0.1.0-double-click, develop e release/0.1.0-alpha.4. main permanece reservada ao release publicado.
+
+## Aceitação concluída — 2026-10-18
+
+Hugo confirmou: Testei tudo e está funcionando. A alpha.4 está aceita pelo usuário após testes manuais. Este registro substitui o estado anterior de aceitação pendente. Release público ainda não publicado.
