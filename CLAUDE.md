@@ -22,3 +22,5 @@ Settings has General / Shortcuts / Workflows tabs. Global settings belong only i
 Selecting a workflow parent shows all steps with numbered headings and separators; a child shows one step. Render independent Markdown sections in the same native reader so malformed Markdown cannot consume later steps. Keep text capacity for the full 128×4096 workflow and eight image previews per reader, directing users to individual steps for extra images. No schema change.
 
 Portable collection format 1 is documented in docs/collection-format.md. Keep global settings/view state out of exports. Import preserves other profiles and never overwrites conflicting images; rollback removes only files created by that import. Use native Windows JSON/Base64, without background polling. Candidate 0.3.0-alpha.1 awaits manual acceptance.
+
+0.3.0-alpha.2 incorporates Settings as a child of the main popup. Gear beside PIN replaces Manage actions; Back confirms discard. Hidden settings drafts survive Escape/focus dismissal; process exit must check settingsVisible independently of child visibility. Route dialog navigation through popup and IDOK to Editor. See docs/validation-0.3.0-alpha.2.md.

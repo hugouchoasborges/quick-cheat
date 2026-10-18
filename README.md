@@ -38,14 +38,14 @@ Screenshots were captured from the released app using isolated, fictional demo d
 
 1. Launch Quick Cheat. It runs in the Windows notification area.
 2. Open an application and press **Ctrl+Alt+Space** to show its shortcuts.
-3. Choose **Manage shortcuts** to add descriptions, categories and key combinations.
+3. Open the **gear → Shortcuts** to add descriptions, categories and key combinations.
 4. Search or select a shortcut, then double-click it, click **Execute** or press Enter. Press **Esc** to close the popup.
 
 You can also open the library from the tray icon. If the default hotkey is already in use on first launch, Quick Cheat tries **Ctrl+Alt+Shift+Space** and notifies you. Change the activation hotkey in the library. Release held modifier keys before executing a shortcut.
 
 ## Settings
 
-Open **Settings...** from the tray menu. Three tabs keep global preferences separate from application content:
+Use the **gear** to the left of PIN, or open **Settings...** from the tray menu. Three tabs keep global preferences separate from application content:
 
 - **General:** appearance, activation shortcut and access to your local data folder.
 - **Shortcuts:** choose an application, organize categories, and add, edit or record shortcuts.
@@ -53,7 +53,7 @@ Open **Settings...** from the tray menu. Three tabs keep global preferences sepa
 
 ![General settings in dark mode](docs/images/settings-general-dark.png)
 
-The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Popup management buttons open the corresponding tab directly.
+The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Use the gear beside PIN to open Settings in the same main window. Back returns to the library after confirming pending edits. Escape and unpinned focus loss hide the window while retaining the draft.
 
 ## Portable collections — 0.3.0-alpha.1 candidate
 
@@ -81,7 +81,7 @@ Each shortcut contains one key combination. Docks, community sharing, an install
 
 ## Workflows
 
-Create local step-by-step guides for each application. Open **Settings → Workflows** and choose an application, or use **Manage workflows** in the popup. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
+Create local step-by-step guides for each application. Open **Settings → Workflows** and choose an application using the gear beside PIN. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
 Write step explanations in Markdown: headings, **bold**, *italic*, lists, checklists, quotes, code and links render in the popup. Click **Attach image...** in the step editor to copy a PNG, JPEG, BMP or GIF into your local library and insert its Markdown reference. Save the workflow, then select the step in the popup to see the formatted explanation and image. GIFs use the first frame.
 

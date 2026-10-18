@@ -41,14 +41,14 @@ bool App::start(HINSTANCE value) {
  onForeground(GetForegroundWindow());addTray();
  if(!trayAdded){error(L"Cannot add the notification icon. Quick Cheat will close; please try again.");return false;}
  if(!registered||fallback){NOTIFYICONDATAW n{sizeof(n)};n.hWnd=host;n.uID=1;n.uFlags=NIF_INFO;n.dwInfoFlags=NIIF_INFO;
- wcscpy_s(n.szInfoTitle,L"Quick Cheat activation");auto info=registered?L"The default shortcut is in use. Using "+formatChord(store.trigger)+L". Change it in Manage shortcuts.":L"Your activation shortcut is in use. Open Manage shortcuts from the tray to change it.";
+ wcscpy_s(n.szInfoTitle,L"Quick Cheat activation");auto info=registered?L"The default shortcut is in use. Using "+formatChord(store.trigger)+L". Change it in Settings.":L"Your activation shortcut is in use. Open Settings from the tray to change it.";
  wcsncpy_s(n.szInfo,info.c_str(),_TRUNCATE);Shell_NotifyIconW(NIM_MODIFY,&n);}
  return true;
 }
 void App::addTray() {
  NOTIFYICONDATAW n{sizeof(n)};n.hWnd=host;n.uID=1;n.uFlags=NIF_ICON|NIF_MESSAGE|NIF_TIP;n.uCallbackMessage=TrayMessage;n.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));
  if(!n.hIcon)n.hIcon=LoadIconW(nullptr,IDI_APPLICATION);
- wcscpy_s(n.szTip,L"Quick Cheat — Manage shortcuts");trayAdded=Shell_NotifyIconW(NIM_ADD,&n)!=FALSE;
+ wcscpy_s(n.szTip,L"Quick Cheat — Settings");trayAdded=Shell_NotifyIconW(NIM_ADD,&n)!=FALSE;
 }
 void App::trayMenu() {
  HMENU menu=CreatePopupMenu();AppendMenuW(menu,MF_STRING,CmdOpen,L"Show shortcuts");AppendMenuW(menu,MF_STRING,CmdManage,L"Settings...");
@@ -69,11 +69,11 @@ void App::onForeground(HWND window) {
 }
 Profile* App::currentProfile() { for(auto& p:store.profiles)if(p.executable==target.executable)return &p;return nullptr; }
 void App::togglePopup() {
- if(popup&&IsWindowVisible(popup)){if(popupPinned){SetForegroundWindow(popup);SetFocus(search);}else hidePopup();return;}
+ if(popup&&IsWindowVisible(popup)){if(popupPinned){SetForegroundWindow(popup);SetFocus(settingsVisible&&editor?GetDlgItem(editor->window,220+editor->page):search);}else hidePopup();return;}
  onForeground(GetForegroundWindow());if(!targetAlive(target)){error(L"Activate an application window first, then press the activation shortcut.");return;}
  if(!popup)createPopup();refreshPopup(true);
  positionPopup(true);
- layoutPopup();SetForegroundWindow(popup);SetFocus(search);
+ layoutPopup();SetForegroundWindow(popup);SetFocus(settingsVisible&&editor?GetDlgItem(editor->window,220+editor->page):search);
 }
 void App::hidePopup(bool restore){if(!popup)return;syncCategoryStates();bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(workflowDetail)clearMarkdown(workflowDetail);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
 void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);}
@@ -93,7 +93,15 @@ bool App::commit(Store candidate) {
  std::wstring message;if(!saveStore(file,candidate,message)){if(changed)UnregisterHotKey(host,next);error(message,editor?editor->window:host);return false;}
  if(changed){UnregisterHotKey(host,hotkeyId);hotkeyId=next;}bool appearanceChanged=candidate.theme!=store.theme;store=std::move(candidate);if(appearanceChanged)applyTheme();if(popup)refreshPopup();return true;
 }
-void App::openEditor(int page) { if(!popupPinned)hidePopup(false);if(!editor)editor=std::make_unique<Editor>(*this);if(editor->window)SetWindowLongPtrW(editor->window,GWLP_HWNDPARENT,reinterpret_cast<LONG_PTR>(popupPinned?popup:nullptr));editor->show();editor->selectPage(page); }
+void App::openEditor(int page) {
+ if(!popup){createPopup();refreshPopup(true);}if(!editor)editor=std::make_unique<Editor>(*this);
+ if(!settingsVisible)editor->show();settingsVisible=true;editor->selectPage(page);
+ if(!IsWindowVisible(popup))positionPopup(true);layoutPopup();SetForegroundWindow(popup);SetFocus(GetDlgItem(editor->window,220+editor->page));
+}
+void App::closeSettings(){
+ if(!settingsVisible||!editor||!editor->leavePage())return;
+ editor->recording=false;ShowWindow(editor->window,SW_HIDE);settingsVisible=false;refreshPopup();layoutPopup();SetFocus(search);
+}
 LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  auto* app=reinterpret_cast<App*>(GetWindowLongPtrW(h,GWLP_USERDATA));
  if(msg==WM_NCCREATE){app=static_cast<App*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(app));}
@@ -105,8 +113,8 @@ LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  case ThemeChanged:case WM_SETTINGCHANGE:case WM_SYSCOLORCHANGE:app->applyTheme();return 0;
  case TrayMessage:if(l==WM_RBUTTONUP||l==WM_CONTEXTMENU)app->trayMenu();else if(l==WM_LBUTTONDBLCLK)app->openEditor();return 0;
  case WM_COMMAND:switch(LOWORD(w)){case CmdOpen:app->togglePopup();break;case CmdManage:app->openEditor(0);break;
- case CmdData:ShellExecuteW(h,L"open",app->file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;case CmdExit:if(app->editor&&IsWindowVisible(app->editor->window)&&!app->editor->leavePage())break;PostQuitMessage(0);break;}return 0;
- case WM_CLOSE:if(!app->editor||!IsWindowVisible(app->editor->window)||app->editor->leavePage())PostQuitMessage(0);return 0;
+ case CmdData:ShellExecuteW(h,L"open",app->file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;case CmdExit:if(app->editor&&app->settingsVisible&&!app->editor->leavePage())break;PostQuitMessage(0);break;}return 0;
+ case WM_CLOSE:if(!app->editor||!app->settingsVisible||app->editor->leavePage())PostQuitMessage(0);return 0;
  }return DefWindowProcW(h,msg,w,l);
 }
 }
@@ -118,8 +126,8 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  try { qc::App app;int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);
  if(argv){if(argc==3&&wcscmp(argv[1],L"--data-dir")==0)app.file=std::filesystem::path(argv[2])/L"shortcuts.qc";LocalFree(argv);}
  if(!app.start(instance))result=1;else {MSG message{};BOOL status=0;while((status=GetMessageW(&message,nullptr,0,0))>0) {
- if(app.editor&&app.editor->window&&IsWindowEnabled(app.editor->window)&&IsWindowVisible(app.editor->window)&&IsDialogMessageW(app.editor->window,&message))continue;
- if(app.popup&&IsWindowVisible(app.popup)&&GetForegroundWindow()==app.popup&&IsDialogMessageW(app.popup,&message))continue;
+ if(app.settingsVisible&&app.editor&&IsWindowVisible(app.popup)&&IsWindowEnabled(app.editor->window)&&IsDialogMessageW(app.popup,&message)){if(message.message==WM_KEYDOWN&&message.wParam==VK_TAB&&app.editor)app.editor->revealFocus();continue;}
+ if(app.popup&&IsWindowVisible(app.popup)&&GetForegroundWindow()==app.popup&&IsDialogMessageW(app.popup,&message)){if(message.message==WM_KEYDOWN&&message.wParam==VK_TAB&&app.editor)app.editor->revealFocus();continue;}
  TranslateMessage(&message);DispatchMessageW(&message);
  }if(status<0)result=1;}}
  catch(const std::exception&){MessageBoxW(nullptr,L"Quick Cheat could not continue. Saved shortcuts were not changed.",L"Quick Cheat",MB_OK|MB_ICONERROR);result=1;}

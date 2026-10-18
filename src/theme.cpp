@@ -1,6 +1,7 @@
 #include "theme.hpp"
 #include <dwmapi.h>
 #include <uxtheme.h>
+#include <cmath>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.UI.ViewManagement.h>
 namespace qc {
@@ -59,13 +60,18 @@ bool Theme::drawControl(DRAWITEMSTRUCT* item){
  FillRect(dc,&r,onPanel?panel:background);
  rounded(dc,r,fill,primary&&enabled?colors.accent:colors.border,MulDiv(10,GetDpiForWindow(item->hwndItem),96));
  auto old=SelectObject(dc,reinterpret_cast<HFONT>(SendMessageW(item->hwndItem,WM_GETFONT,0,0)));wchar_t label[160]{};GetWindowTextW(item->hwndItem,label,160);
- if(item->CtlID==110||item->CtlID==111){
+ if(item->CtlID==101||item->CtlID==110||item->CtlID==111||item->CtlID==112){
   UINT dpi=GetDpiForWindow(item->hwndItem);auto px=[&](int n){return MulDiv(n,dpi,96);};int cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2;
   auto color=item->CtlID==111&&enabled&&!highContrast?(dark?RGB(255,110,110):RGB(190,40,40)):text;
   HPEN pen=CreatePen(PS_SOLID,(std::max)(1,px(2)),color);auto oldPen=SelectObject(dc,pen);
   auto point=[&](int x,int y){if(item->CtlID==110&&!primary){int rotatedX=MulDiv(x-y,707,1000);y=MulDiv(x+y,707,1000);x=rotatedX;}return POINT{cx+px(x),cy+px(y)};};
   auto line=[&](int x1,int y1,int x2,int y2){auto a=point(x1,y1),b=point(x2,y2);MoveToEx(dc,a.x,a.y,nullptr);LineTo(dc,b.x,b.y);};
-  if(item->CtlID==111){line(-5,-5,6,6);line(5,-5,-6,6);}
+  if(item->CtlID==101){
+   POINT points[32]{};for(int i=0;i<32;++i){double angle=i*3.141592653589793/16;double radius=(i%4==1||i%4==2)?10:7.5;points[i]={cx+px(static_cast<int>(std::lround(std::cos(angle)*radius))),cy+px(static_cast<int>(std::lround(std::sin(angle)*radius)))};}
+   auto brush=SelectObject(dc,GetStockObject(NULL_BRUSH));Polygon(dc,points,32);Ellipse(dc,cx-px(3),cy-px(3),cx+px(3)+1,cy+px(3)+1);SelectObject(dc,brush);
+  }
+  else if(item->CtlID==112){line(7,0,-7,0);line(-7,0,-1,-6);line(-7,0,-1,6);}
+  else if(item->CtlID==111){line(-5,-5,6,6);line(5,-5,-6,6);}
   else{line(-5,-8,5,-8);line(-3,-8,-3,-2);line(3,-8,3,-2);line(-3,-2,-7,3);line(3,-2,7,3);line(-7,3,7,3);line(0,3,0,10);}
   SelectObject(dc,oldPen);DeleteObject(pen);
  }else paintText(dc,label,r,text,DT_SINGLELINE|DT_VCENTER|DT_CENTER);SelectObject(dc,old);
