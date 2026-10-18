@@ -41,6 +41,18 @@ Screenshots use isolated demo data. The sample shortcuts are illustrative; appli
 
 You can also open the library from the tray icon. If the default hotkey is already in use on first launch, Quick Cheat tries **Ctrl+Alt+Shift+Space** and notifies you. Change the activation hotkey in the library. Release held modifier keys before executing a shortcut.
 
+## Settings
+
+Open **Settings...** from the tray menu. Three tabs keep global preferences separate from application content:
+
+- **General:** appearance, activation shortcut and access to your local data folder.
+- **Shortcuts:** choose an application, organize categories, and add, edit or record shortcuts.
+- **Workflows:** choose an application and manage its guides, ordered steps, Markdown and attached images in the same window.
+
+![General settings in dark mode](docs/images/settings-general-dark.png)
+
+The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Popup management buttons open the corresponding tab directly.
+
 ## Local data
 
 Shortcuts and settings are stored in `%LOCALAPPDATA%\QuickCheat\shortcuts.qc`. The previous save is kept as `shortcuts.qc.bak`. To restore it, exit the app, keep a copy of the current file and replace it with the backup.
@@ -55,9 +67,9 @@ Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline;
 
 Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
 
-## Workflows — 0.2.0-alpha.6 candidate
+## Workflows — 0.2.0-alpha.7 candidate
 
-The development build adds local step-by-step guides for each application. In the shortcut library, choose an application and click **Manage workflows**. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
+The development build adds local step-by-step guides for each application. Open **Settings → Workflows** and choose an application, or use **Manage workflows** in the popup. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
 Write step explanations in Markdown: headings, **bold**, *italic*, lists, checklists, quotes, code and links render in the popup. Click **Attach image...** in the step editor to copy a PNG, JPEG, BMP or GIF into your local library and insert its Markdown reference. Save the workflow, then select the step in the popup to see the formatted explanation and image. GIFs use the first frame.
 

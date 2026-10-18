@@ -42,7 +42,8 @@ int wmain(int argc,wchar_t** argv){
  SendMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");
  SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);pause(120);
  auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
- SendMessageW(editor,WM_COMMAND,108,0);auto workflows=waitWindow(L"QuickCheatWorkflows");pause(120);capture(workflows,output/(std::wstring(L"workflow-editor-")+name+L".bmp"));SendMessageW(workflows,WM_CLOSE,0,0);
+ capture(editor,output/(std::wstring(L"settings-general-")+name+L".bmp"));SendMessageW(editor,WM_COMMAND,221,0);pause(120);capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
+ SendMessageW(editor,WM_COMMAND,108,0);auto workflows=GetDlgItem(editor,230);SendMessageW(GetDlgItem(workflows,402),LB_SETCURSEL,0,0);SendMessageW(workflows,WM_COMMAND,MAKEWPARAM(402,LBN_SELCHANGE),0);pause(120);capture(editor,output/(std::wstring(L"workflow-editor-")+name+L".bmp"));SendMessageW(editor,WM_COMMAND,221,0);
  SendMessageW(host,WM_HOTKEY,1,0);auto popup=waitWindow(L"QuickCheatPopup");pause(120);capture(popup,output/(std::wstring(L"popup-")+name+L".bmp"));
  SendMessageW(popup,WM_COMMAND,110,0);pause(100);capture(popup,output/(std::wstring(L"popup-pinned-")+name+L".bmp"));
  SendMessageW(popup,WM_COMMAND,107,0);auto tree=GetDlgItem(popup,7);auto root=TreeView_GetRoot(tree);auto step=TreeView_GetChild(tree,root);TreeView_SelectItem(tree,step);pause(120);capture(popup,output/(std::wstring(L"workflow-popup-")+name+L".bmp"));SendMessageW(popup,WM_COMMAND,106,0);SendMessageW(popup,WM_COMMAND,110,0);
