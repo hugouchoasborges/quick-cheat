@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-alpha.7 — 2026-10-18
+
+Settings reorganized into General, Shortcuts and Workflows. Global appearance, activation and data-folder access have their own page; application selection is shared by the two content tabs. Workflow editing is embedded in the settings window with columns for guides, ordered steps and Markdown text. Popup management actions open the relevant tab; tray Settings opens General. Native themed navigation, clearer spacing and focused forms replace the mixed layout.
+
+Pending edits are confirmed before tab/application changes and closing. Discarding a workflow reloads the saved draft, including when Browse is subsequently canceled. The parent handles dialog keyboard navigation across the embedded editor. Markdown source converts LF/CRLF for native multiline editing while retaining the 4096-character stored limit. Data schema remains v3. Release compilation, independent review and isolated theme captures completed; no tests added or run. Candidate awaiting manual acceptance.
+
 ## 0.2.0-alpha.6 — 2026-10-18
 
 Shortcut cards are grouped beneath themed category headers with a divider and expand/collapse chevron. Click a header to toggle it. Expansion preferences are saved per executable and category in ui-state.ini, alongside shortcuts.qc; new categories default to expanded. Search temporarily reveals matching categories without changing saved preferences. Hidden shortcuts cannot be selected or executed; search navigation skips collapsed groups. Native group keyboard access is retained. Cards no longer repeat their category label. Schema v3 and workflow data are unchanged. Release build and isolated dark/light captures completed; manual acceptance pending, no tests added or run.

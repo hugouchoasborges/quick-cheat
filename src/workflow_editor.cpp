@@ -10,44 +10,42 @@ bool hasText(const std::wstring& text){return text.find_first_not_of(L" \t\r\n")
 Profile* findProfile(Store& store,const std::wstring& key){for(auto& p:store.profiles)if(p.executable==key)return &p;return nullptr;}
 void syncWorkflowDraft(App& app){if(app.editor)for(auto& profile:app.editor->draft.profiles)if(auto* saved=findProfile(app.store,profile.executable))profile.workflows=saved->workflows;}
 std::wstring summary(const std::wstring& text){auto line=text.substr(0,96);for(auto& c:line)if(c==L'\n'||c==L'\r'||c==L'\t')c=L' ';return line+(text.size()>96?L"…":L"");}
+std::wstring storedText(const std::wstring& text){std::wstring out;for(size_t i=0;i<text.size();++i){if(text[i]==L'\r'){out+=L'\n';if(i+1<text.size()&&text[i+1]==L'\n')++i;}else out+=text[i];}return out;}
+std::wstring editText(const std::wstring& text){std::wstring out;for(auto c:storedText(text)){if(c==L'\n')out+=L'\r';out+=c;}return out;}
 }
 WorkflowEditor::~WorkflowEditor(){if(window)DestroyWindow(window);if(font)DeleteObject(font);}
 void App::openWorkflowEditor(const std::wstring& key){
  if(key.empty())return;
- if(!workflowEditor)workflowEditor=std::make_unique<WorkflowEditor>(*this);
- workflowEditor->show(key);
+ if(!popupPinned)hidePopup(false);if(!editor)editor=std::make_unique<Editor>(*this);if(editor->window)SetWindowLongPtrW(editor->window,GWLP_HWNDPARENT,reinterpret_cast<LONG_PTR>(popupPinned?popup:nullptr));editor->show();editor->openWorkflows(key);
 }
-void WorkflowEditor::show(const std::wstring& key){
- if(window&&IsWindowVisible(window)){ShowWindow(window,SW_RESTORE);SetForegroundWindow(window);return;}
- auto* profile=findProfile(app.store,key);if(!profile){app.error(L"Save or choose an application profile first.",app.editor?app.editor->window:nullptr);return;}
+bool WorkflowEditor::show(const std::wstring& key,HWND parent){
+ if(window&&IsWindowVisible(window)&&executable==key)return true;
+ if(!discard())return false;
+ auto* profile=findProfile(app.store,key);if(!profile){app.error(L"Save or choose an application profile first.",parent);return false;}
  executable=key;
  if(!window){WNDCLASSW cls{};cls.hInstance=app.instance;cls.lpfnWndProc=proc;cls.lpszClassName=L"QuickCheatWorkflows";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(app.instance,MAKEINTRESOURCEW(1));RegisterClassW(&cls);
- window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat — Workflows",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,1060,760,app.editor?app.editor->window:nullptr,nullptr,app.instance,this);}
- if(!window)return;
+ window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"Workflows",WS_CHILD,0,0,1000,500,parent,reinterpret_cast<HMENU>(230),app.instance,this);}
+ if(!window)return false;
  auto caption=L"Quick Cheat — Workflows — "+profile->name;SetWindowTextW(window,caption.c_str());
  refreshFlows();loadFlow(profile->workflows.empty()?-1:0);app.theme.style(window);layout();
- if(app.editor)EnableWindow(app.editor->window,FALSE);
- ShowWindow(window,SW_SHOW);SetForegroundWindow(window);SetFocus(title);
+ ShowWindow(window,SW_SHOWNA);return true;
 }
 bool WorkflowEditor::discard(){return !(dirty||pendingStep)||MessageBoxW(window,L"Discard unsaved workflow changes?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)==IDYES;}
 void WorkflowEditor::close(){
- if(!discard())return;
- dirty=pendingStep=false;ShowWindow(window,SW_HIDE);
- if(app.editor){syncWorkflowDraft(app);EnableWindow(app.editor->window,TRUE);SetForegroundWindow(app.editor->window);}
+ if(app.editor)app.editor->close();
 }
 void WorkflowEditor::layout(){
  if(!window)return;UINT nextDpi=GetDpiForWindow(window);RECT rect;GetClientRect(window,&rect);int width=MulDiv(rect.right,96,nextDpi),height=MulDiv(rect.bottom,96,nextDpi);
  if(!font||dpi!=nextDpi){auto next=CreateFontW(-MulDiv(14,nextDpi,96),0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,CLEARTYPE_QUALITY,0,L"Segoe UI");for(HWND c=GetWindow(window,GW_CHILD);c;c=GetWindow(c,GW_HWNDNEXT))SendMessageW(c,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);if(font)DeleteObject(font);font=next;dpi=nextDpi;}
- auto place=[&](int id,int x,int y,int w,int h){bounds(GetDlgItem(window,id),x,y,w,h,dpi);};int content=width-352;
- place(PageTitle,24,20,width-48,30);place(FlowList,24,64,276,height-192);
- place(NewFlow,24,height-112,132,32);place(DeleteFlow,168,height-112,132,32);
- place(TitleLabel,328,64,content,20);place(FlowTitle,328,90,content,30);
- place(StepsLabel,328,136,content,20);place(StepList,328,164,content,164);
- place(NewStep,328,338,100,30);place(DeleteStep,436,338,100,30);place(StepUp,544,338,100,30);place(StepDown,652,338,108,30);
- place(TextLabel,328,384,content,20);place(StepText,328,412,content,height-546);place(ApplyStep,328,height-124,132,32);
- place(AttachImage,472,height-124,148,32);
- place(SaveFlow,width-300,height-66,164,36);place(Close,width-124,height-66,100,36);place(Status,24,height-24,width-48,20);
- InvalidateRect(window,nullptr,TRUE);
+ auto place=[&](int id,int x,int y,int w,int h){bounds(GetDlgItem(window,id),x,y,w,h,dpi);};int stepX=268,stepWidth=(std::clamp)((width-316)*36/100,224,300),textX=stepX+stepWidth+24,textWidth=width-textX-28,half=(stepWidth-12)/2;
+ place(PageTitle,28,8,220,22);place(FlowList,28,40,220,height-176);
+ place(NewFlow,28,height-112,220,32);place(DeleteFlow,28,height-72,220,30);
+ place(TitleLabel,stepX,8,width-stepX-28,20);place(FlowTitle,stepX,36,width-stepX-28,32);
+ place(StepsLabel,stepX,90,stepWidth,20);place(StepList,stepX,128,stepWidth,height-264);
+ place(NewStep,stepX,height-112,half,30);place(DeleteStep,stepX+half+12,height-112,half,30);place(StepUp,stepX,height-72,half,30);place(StepDown,stepX+half+12,height-72,half,30);
+ place(TextLabel,textX,90,textWidth,20);place(StepText,textX,128,textWidth,height-264);place(ApplyStep,textX,height-112,132,32);place(AttachImage,textX+144,height-112,148,32);
+ place(SaveFlow,textX,height-64,textWidth,36);ShowWindow(GetDlgItem(window,Close),SW_HIDE);place(Status,28,height-24,width-56,20);
+ RedrawWindow(window,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
 }
 void WorkflowEditor::refreshFlows(){
  loading=true;SendMessageW(flows,LB_RESETCONTENT,0,0);if(auto* profile=findProfile(app.store,executable))for(const auto& flow:profile->workflows)SendMessageW(flows,LB_ADDSTRING,0,reinterpret_cast<LPARAM>(flow.title.c_str()));loading=false;
@@ -62,13 +60,13 @@ void WorkflowEditor::refreshSteps(){
  EnableWindow(GetDlgItem(window,DeleteStep),stepIndex>=0);EnableWindow(GetDlgItem(window,StepUp),stepIndex>0);EnableWindow(GetDlgItem(window,StepDown),stepIndex>=0&&stepIndex+1<static_cast<int>(draft.steps.size()));
 }
 bool WorkflowEditor::applyStep(){
- if(!pendingStep)return true;auto text=textOf(stepText);if(!hasText(text)||text.size()>4096){app.error(L"Enter step text (1–4096 characters). To remove a step, use Remove step.",window);return false;}
+ if(!pendingStep)return true;auto text=storedText(textOf(stepText));if(!hasText(text)||text.size()>4096){app.error(L"Enter step text (1–4096 characters). To remove a step, use Remove step.",window);return false;}
  if(stepIndex>=0)draft.steps[stepIndex]=std::move(text);else{if(draft.steps.size()>=128){app.error(L"A workflow supports up to 128 steps.",window);return false;}draft.steps.push_back(std::move(text));stepIndex=static_cast<int>(draft.steps.size()-1);}
  dirty=true;pendingStep=false;refreshSteps();return true;
 }
 void WorkflowEditor::selectStep(int index){
  if(index<0||index>=static_cast<int>(draft.steps.size()))return;
- loading=true;stepIndex=index;SetWindowTextW(stepText,draft.steps[index].c_str());loading=false;pendingStep=false;refreshSteps();
+ loading=true;stepIndex=index;SetWindowTextW(stepText,editText(draft.steps[index]).c_str());loading=false;pendingStep=false;refreshSteps();
 }
 void WorkflowEditor::moveStep(int delta){
  if(!applyStep())return;int next=stepIndex+delta;if(stepIndex<0||next<0||next>=static_cast<int>(draft.steps.size()))return;
@@ -79,7 +77,7 @@ void WorkflowEditor::attachImage(){
  wchar_t source[32768]{};OPENFILENAMEW dialog{};dialog.lStructSize=sizeof(dialog);dialog.hwndOwner=window;dialog.lpstrFilter=L"Images (PNG, JPEG, BMP, GIF)\0*.png;*.jpg;*.jpeg;*.bmp;*.gif\0All files\0*.*\0";dialog.lpstrFile=source;dialog.nMaxFile=32768;dialog.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
  if(!GetOpenFileNameW(&dialog))return;std::wstring reference,error;if(!importWorkflowImage(source,app.file.parent_path(),reference,error)){app.error(error,window);return;}
  auto markdown=L"\r\n\r\n![Step image]("+reference+L")\r\n";DWORD begin=0,end=0;SendMessageW(stepText,EM_GETSEL,reinterpret_cast<WPARAM>(&begin),reinterpret_cast<LPARAM>(&end));
- if(textOf(stepText).size()-(end-begin)+markdown.size()>4096){app.error(L"The step text plus attachment reference exceeds 4096 characters. Shorten it first.",window);return;}
+ auto current=textOf(stepText);if(begin>end||end>current.size()||storedText(current.substr(0,begin)+markdown+current.substr(end)).size()>4096){app.error(L"The step text plus attachment reference exceeds 4096 characters. Shorten it first.",window);return;}
  SendMessageW(stepText,EM_REPLACESEL,TRUE,reinterpret_cast<LPARAM>(markdown.c_str()));pendingStep=true;SetFocus(stepText);SetWindowTextW(status,L"Image attached locally. Choose Save workflow to keep the step and its image reference.");
 }
 void WorkflowEditor::save(){
@@ -101,11 +99,11 @@ LRESULT CALLBACK WorkflowEditor::proc(HWND h,UINT msg,WPARAM w,LPARAM l){
  auto* e=reinterpret_cast<WorkflowEditor*>(GetWindowLongPtrW(h,GWLP_USERDATA));if(msg==WM_NCCREATE){e=static_cast<WorkflowEditor*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);e->window=h;SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(e));}if(!e)return DefWindowProcW(h,msg,w,l);
  switch(msg){
  case WM_CREATE:{
- control(h,L"STATIC",L"Workflows — step-by-step guides for your application",0,PageTitle);
+ control(h,L"STATIC",L"Your workflows",0,PageTitle);
  e->flows=control(h,L"LISTBOX",L"",LBS_NOTIFY|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_TABSTOP,FlowList);
  control(h,L"STATIC",L"Workflow title",0,TitleLabel);e->title=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,FlowTitle);SendMessageW(e->title,EM_SETLIMITTEXT,240,0);
- control(h,L"STATIC",L"Steps — select a step to read or edit it",0,StepsLabel);e->steps=control(h,L"LISTBOX",L"",LBS_NOTIFY|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_TABSTOP,StepList);
- control(h,L"STATIC",L"Step text (Markdown)",0,TextLabel);e->stepText=control(h,L"EDIT",L"",ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL|WS_TABSTOP,StepText);SendMessageW(e->stepText,EM_SETLIMITTEXT,4096,0);
+ control(h,L"STATIC",L"Steps",0,StepsLabel);e->steps=control(h,L"LISTBOX",L"",LBS_NOTIFY|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_TABSTOP,StepList);
+ control(h,L"STATIC",L"Step text (Markdown)",0,TextLabel);e->stepText=control(h,L"EDIT",L"",ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL|WS_TABSTOP,StepText);SendMessageW(e->stepText,EM_SETLIMITTEXT,8192,0);
  control(h,L"BUTTON",L"Attach image...",WS_TABSTOP,AttachImage);
  const std::pair<int,const wchar_t*> buttons[]={{NewFlow,L"New workflow"},{SaveFlow,L"Save workflow"},{DeleteFlow,L"Delete workflow"},{NewStep,L"New step"},{ApplyStep,L"Apply step"},{DeleteStep,L"Remove step"},{StepUp,L"Move up"},{StepDown,L"Move down"},{Close,L"Close"}};for(auto [id,label]:buttons)control(h,L"BUTTON",label,WS_TABSTOP,id);
  e->status=control(h,L"STATIC",L"",0,Status);return 0;}
@@ -113,7 +111,8 @@ LRESULT CALLBACK WorkflowEditor::proc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);e->layout();return 0;}
  case WM_GETMINMAXINFO:{UINT dpi=GetDpiForWindow(h);reinterpret_cast<MINMAXINFO*>(l)->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(720,dpi,96)};return 0;}
  case WM_ERASEBKGND:{RECT r;GetClientRect(h,&r);FillRect(reinterpret_cast<HDC>(w),&r,e->app.theme.background);return 1;}
- case WM_CTLCOLORSTATIC:case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:return e->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));
+ case WM_CTLCOLORSTATIC:e->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));return reinterpret_cast<LRESULT>(e->app.theme.background);
+ case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:return e->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));
  case WM_DRAWITEM:e->app.theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l));return TRUE;
  case WM_COMMAND:
  if(e->loading)return 0;
