@@ -10,7 +10,7 @@ void executeSelected(App& app){auto selected=SendMessageW(app.rows,LB_GETCURSEL,
 LRESULT CALLBACK rowProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
  auto* app=reinterpret_cast<App*>(value);
  if(msg==WM_LBUTTONDBLCLK){auto hit=SendMessageW(h,LB_ITEMFROMPOINT,0,l);auto count=SendMessageW(h,LB_GETCOUNT,0,0);if(!HIWORD(hit)&&LOWORD(hit)<count){SendMessageW(h,LB_SETCURSEL,LOWORD(hit),0);executeSelected(*app);}return 0;}
- if(msg==WM_LBUTTONDOWN){auto hit=SendMessageW(h,LB_ITEMFROMPOINT,0,l);if(!HIWORD(hit)){SendMessageW(h,LB_SETCURSEL,LOWORD(hit),0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);SetFocus(app->search);InvalidateRect(h,nullptr,FALSE);}return 0;}
+ if(msg==WM_LBUTTONDOWN){auto hit=SendMessageW(h,LB_ITEMFROMPOINT,0,l);if(!HIWORD(hit)){SendMessageW(h,LB_SETCURSEL,LOWORD(hit),0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);app->updateShortcutDetail();SetFocus(app->search);InvalidateRect(h,nullptr,FALSE);}return 0;}
  if(msg==WM_LBUTTONUP)return 0;
  if(msg==WM_KEYDOWN&&w==VK_RETURN){executeSelected(*app);return 0;}
  if(msg==WM_KEYDOWN&&w==VK_ESCAPE){app->hidePopup();return 0;}
@@ -22,11 +22,15 @@ LRESULT CALLBACK searchProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR
  if(msg==WM_KEYDOWN){
  if(w==VK_ESCAPE){app->hidePopup();return 0;}if(w==VK_RETURN){if(app->workflowsVisible){SetFocus(app->workflowTree);auto item=TreeView_GetSelection(app->workflowTree);if(item)TreeView_Expand(app->workflowTree,item,TVE_TOGGLE);}else executeSelected(*app);return 0;}
  if(w==VK_OEM_COMMA&&(GetKeyState(VK_CONTROL)&0x8000)){app->openEditor();return 0;}
- if(w==VK_UP||w==VK_DOWN){if(app->workflowsVisible){SetFocus(app->workflowTree);SendMessageW(app->workflowTree,msg,w,l);return 0;}auto count=SendMessageW(app->rows,LB_GETCOUNT,0,0);auto selected=SendMessageW(app->rows,LB_GETCURSEL,0,0);if(count>0){selected=selected==LB_ERR?0:(std::clamp)(selected+(w==VK_DOWN?1:-1),LRESULT(0),count-1);SendMessageW(app->rows,LB_SETCURSEL,selected,0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);InvalidateRect(app->rows,nullptr,FALSE);}return 0;}
+ if(w==VK_UP||w==VK_DOWN){if(app->workflowsVisible){SetFocus(app->workflowTree);SendMessageW(app->workflowTree,msg,w,l);return 0;}auto count=SendMessageW(app->rows,LB_GETCOUNT,0,0);auto selected=SendMessageW(app->rows,LB_GETCURSEL,0,0);if(count>0){selected=selected==LB_ERR?0:(std::clamp)(selected+(w==VK_DOWN?1:-1),LRESULT(0),count-1);SendMessageW(app->rows,LB_SETCURSEL,selected,0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);app->updateShortcutDetail();InvalidateRect(app->rows,nullptr,FALSE);}return 0;}
  }
  if(msg==WM_CHAR&&(w==VK_RETURN||w==VK_ESCAPE))return 0;
  if(msg==WM_PAINT){auto result=DefSubclassProc(h,msg,w,l);if(GetWindowTextLengthW(h)==0){HDC dc=GetDC(h);RECT r;GetClientRect(h,&r);r.left+=8;auto old=SelectObject(dc,app->bold);paintText(dc,app->workflowsVisible?L"Search workflows...":L"Search shortcuts...",r,app->theme.colors.muted);SelectObject(dc,old);ReleaseDC(h,dc);}return result;}
  return DefSubclassProc(h,msg,w,l);
+}
+LRESULT CALLBACK detailProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
+ auto* app=reinterpret_cast<App*>(value);if(msg==WM_GETDLGCODE&&l){auto* key=reinterpret_cast<MSG*>(l);if(key->wParam==VK_ESCAPE||key->wParam==VK_RETURN)return DefSubclassProc(h,msg,w,l)|DLGC_WANTALLKEYS;}
+ if(msg==WM_KEYDOWN&&w==VK_ESCAPE){app->hidePopup();return 0;}if(msg==WM_KEYDOWN&&w==VK_RETURN)return 0;return DefSubclassProc(h,msg,w,l);
 }
 LRESULT CALLBACK executeProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
  auto* app=reinterpret_cast<App*>(value);
@@ -37,14 +41,16 @@ HFONT makeFont(UINT dpi,int size,int weight){return CreateFontW(-MulDiv(size,dpi
 }
 void App::createPopup(){
  WNDCLASSW cls{};cls.hInstance=instance;cls.lpfnWndProc=popupProc;cls.lpszClassName=L"QuickCheatPopup";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));RegisterClassW(&cls);
- popup=CreateWindowExW(WS_EX_TOOLWINDOW|WS_EX_TOPMOST|WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat",WS_POPUP|WS_BORDER,0,0,740,480,host,nullptr,instance,this);
+ popup=CreateWindowExW(WS_EX_TOOLWINDOW|WS_EX_TOPMOST|WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat",WS_POPUP|WS_THICKFRAME,0,0,1040,760,host,nullptr,instance,this);
  search=control(popup,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Search);SendMessageW(search,EM_SETLIMITTEXT,160,0);SetWindowSubclass(search,searchProc,1,reinterpret_cast<DWORD_PTR>(this));
  heading=control(popup,L"STATIC",L"",SS_RIGHT,1);
  rows=control(popup,L"LISTBOX",L"",WS_VSCROLL|LBS_OWNERDRAWVARIABLE|LBS_HASSTRINGS|LBS_NOINTEGRALHEIGHT|LBS_NOTIFY,2);SetWindowSubclass(rows,rowProc,1,reinterpret_cast<DWORD_PTR>(this));
  empty=control(popup,L"STATIC",L"",SS_CENTER,3);
+ shortcutDetail=control(popup,L"EDIT",L"",ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL|WS_VSCROLL|WS_TABSTOP,9);SetWindowSubclass(shortcutDetail,detailProc,1,reinterpret_cast<DWORD_PTR>(this));
  control(popup,L"BUTTON",L"Manage shortcuts",BS_PUSHBUTTON|WS_TABSTOP,CmdManage);
  auto executeButton=control(popup,L"BUTTON",L"Execute",BS_PUSHBUTTON|WS_TABSTOP,CmdExecute);SetWindowSubclass(executeButton,executeProc,3,reinterpret_cast<DWORD_PTR>(this));
  control(popup,L"BUTTON",L"Esc",BS_PUSHBUTTON|WS_TABSTOP,CmdExit);
+ control(popup,L"BUTTON",L"Expand",BS_PUSHBUTTON|WS_TABSTOP,CmdExpand);
  footer=control(popup,L"STATIC",L"",SS_LEFT,4);createWorkflowPopup();theme.style(popup);
 }
 void App::layoutPopup(){
@@ -55,10 +61,12 @@ void App::layoutPopup(){
  if(font)DeleteObject(font);if(labelFont)DeleteObject(labelFont);if(bold)DeleteObject(bold);font=next;labelFont=nextSmall;bold=nextBold;popupDpi=dpi;}
  bounds(search,46,22,width-260,30,dpi);bounds(heading,width-198,29,172,24,dpi);
  bounds(rows,8,78,width-16,height-146,dpi);bounds(empty,48,158,width-96,104,dpi);
- bounds(GetDlgItem(popup,CmdExit),16,height-44,46,30,dpi);bounds(footer,76,height-38,width-360,24,dpi);
+ bounds(GetDlgItem(popup,CmdExit),16,height-44,46,30,dpi);bounds(footer,76,height-38,width-488,24,dpi);
+ bounds(GetDlgItem(popup,CmdExpand),width-392,height-44,96,30,dpi);
  bounds(GetDlgItem(popup,CmdManage),width-280,height-44,148,30,dpi);bounds(GetDlgItem(popup,CmdExecute),width-120,height-44,104,30,dpi);
- for(size_t i=0;i<visibleRows.size();++i)SendMessageW(rows,LB_SETITEMHEIGHT,i,MulDiv(groupStart(*this,i)?68:44,dpi,96));
  layoutWorkflowPopup();
+ measurePopupRows();
+ updateShortcutDetail();
  InvalidateRect(popup,nullptr,TRUE);
 }
 void App::refreshPopup(bool clearSearch){
@@ -84,9 +92,9 @@ void App::drawRow(DRAWITEMSTRUCT* item){
  std::vector<std::wstring> tokens;auto chord=formatChord(shortcut.chord);size_t begin=0;int total=0;
  while(begin<chord.size()){auto end=chord.find(L'+',begin);auto token=chord.substr(begin,end==chord.npos?end:end-begin);SIZE size{};GetTextExtentPoint32W(dc,token.c_str(),static_cast<int>(token.size()),&size);total+=size.cx+px(20);tokens.push_back(std::move(token));if(end==chord.npos)break;begin=end+1;}
  total+=(static_cast<int>(tokens.size())-1)*px(5);int x=r.right-px(16)-total;
- SelectObject(dc,font);RECT titleRect{r.left+px(16),body.top,x-px(16),body.bottom};paintText(dc,shortcut.title,titleRect,c.text);
+ SelectObject(dc,font);RECT titleRect{r.left+px(16),body.top+px(10),x-px(16),body.bottom-px(10)};paintText(dc,shortcut.title,titleRect,c.text,DT_WORDBREAK|DT_NOPREFIX|DT_END_ELLIPSIS);
  SelectObject(dc,labelFont);
- for(const auto& token:tokens){SIZE size{};GetTextExtentPoint32W(dc,token.c_str(),static_cast<int>(token.size()),&size);RECT key{x,body.top+px(6),x+size.cx+px(20),body.bottom-px(6)};rounded(dc,key,c.key,c.border,px(7));paintText(dc,token,key,c.text,DT_CENTER|DT_SINGLELINE|DT_VCENTER);x=key.right+px(5);}
+ for(const auto& token:tokens){SIZE size{};GetTextExtentPoint32W(dc,token.c_str(),static_cast<int>(token.size()),&size);int top=body.top+(body.bottom-body.top-px(28))/2;RECT key{x,top,x+size.cx+px(20),top+px(28)};rounded(dc,key,c.key,c.border,px(7));paintText(dc,token,key,c.text,DT_CENTER|DT_SINGLELINE|DT_VCENTER);x=key.right+px(5);}
  SelectObject(dc,old);
 }
 LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
@@ -94,18 +102,25 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  if(msg==WM_NCCREATE){app=static_cast<App*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(app));}
  if(!app)return DefWindowProcW(h,msg,w,l);
  switch(msg){
- case WM_MOUSEACTIVATE:{HWND external=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(external,&pid);if(pid!=GetCurrentProcessId()&&external!=app->target.window){app->onForeground(external);SendMessageW(app->rows,LB_SETCURSEL,static_cast<WPARAM>(-1),0);EnableWindow(GetDlgItem(h,CmdExecute),FALSE);}return MA_ACTIVATE;}
+ case WM_MOUSEACTIVATE:{HWND external=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(external,&pid);if(pid!=GetCurrentProcessId()&&external!=app->target.window){auto previous=app->target.window;auto process=app->target.process;app->onForeground(external);if(previous!=app->target.window||process!=app->target.process){SendMessageW(app->rows,LB_SETCURSEL,static_cast<WPARAM>(-1),0);EnableWindow(GetDlgItem(h,CmdExecute),FALSE);}}return MA_ACTIVATE;}
+ case WM_NCHITTEST:{auto hit=DefWindowProcW(h,msg,w,l);if(hit!=HTCLIENT)return hit;POINT point{static_cast<short>(LOWORD(l)),static_cast<short>(HIWORD(l))};ScreenToClient(h,&point);auto child=ChildWindowFromPointEx(h,point,CWP_SKIPINVISIBLE|CWP_SKIPDISABLED|CWP_SKIPTRANSPARENT);if(point.y<MulDiv(70,GetDpiForWindow(h),96)&&(child==h||child==app->heading))return HTCAPTION;return HTCLIENT;}
+ case WM_NCLBUTTONDBLCLK:if(w==HTCAPTION){app->togglePopupSize();return 0;}break;
+ case WM_GETMINMAXINFO:{auto* limits=reinterpret_cast<MINMAXINFO*>(l);MONITORINFO monitor{sizeof(monitor)};if(GetMonitorInfoW(MonitorFromWindow(h,MONITOR_DEFAULTTONEAREST),&monitor)){UINT dpi=GetDpiForWindow(h);LONG width=monitor.rcWork.right-monitor.rcWork.left,height=monitor.rcWork.bottom-monitor.rcWork.top;limits->ptMinTrackSize={(std::min<LONG>)(MulDiv(720,dpi,96),width),(std::min<LONG>)(MulDiv(480,dpi,96),height)};limits->ptMaxTrackSize={width,height};}return 0;}
+ case WM_SIZING:app->popupSizing=true;break;
+ case WM_EXITSIZEMOVE:if(app->popupSizing){app->rememberPopupSize();app->popupSizing=false;}return 0;
  case WM_ERASEBKGND:{RECT r;GetClientRect(h,&r);FillRect(reinterpret_cast<HDC>(w),&r,app->theme.background);return 1;}
  case WM_PAINT:{PAINTSTRUCT ps;auto dc=BeginPaint(h,&ps);RECT r;GetClientRect(h,&r);FillRect(dc,&r,app->theme.background);UINT dpi=GetDpiForWindow(h);auto px=[&](int n){return MulDiv(n,dpi,96);};HPEN line=CreatePen(PS_SOLID,1,app->theme.colors.border);auto old=SelectObject(dc,line);MoveToEx(dc,0,px(70),nullptr);LineTo(dc,r.right,px(70));MoveToEx(dc,0,r.bottom-px(58),nullptr);LineTo(dc,r.right,r.bottom-px(58));
  HPEN icon=CreatePen(PS_SOLID,1,app->theme.colors.muted);SelectObject(dc,icon);HBRUSH oldBrush=static_cast<HBRUSH>(SelectObject(dc,GetStockObject(NULL_BRUSH)));Ellipse(dc,px(23),px(28),px(35),px(40));MoveToEx(dc,px(33),px(38),nullptr);LineTo(dc,px(40),px(45));SelectObject(dc,oldBrush);SelectObject(dc,old);DeleteObject(icon);DeleteObject(line);EndPaint(h,&ps);return 0;}
  case WM_SIZE:app->layoutPopup();return 0;
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);app->layoutPopup();return 0;}
- case WM_MEASUREITEM:{auto* measure=reinterpret_cast<MEASUREITEMSTRUCT*>(l);measure->itemHeight=MulDiv(groupStart(*app,measure->itemID)?68:44,GetDpiForWindow(h),96);return TRUE;}
+ case WM_MEASUREITEM:{auto* measure=reinterpret_cast<MEASUREITEMSTRUCT*>(l);measure->itemHeight=(std::min)(MulDiv(groupStart(*app,measure->itemID)?68:44,GetDpiForWindow(h),96),255);return TRUE;}
  case WM_DRAWITEM:{auto* item=reinterpret_cast<DRAWITEMSTRUCT*>(l);if(item->CtlID==2)app->drawRow(item);else app->theme.drawControl(item);return TRUE;}
  case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(l)->hwndFrom==app->workflowTree&&reinterpret_cast<NMHDR*>(l)->code==TVN_SELCHANGEDW)app->selectWorkflowStep();return 0;
  case ExecuteRow:app->execute(static_cast<size_t>(w));return 0;
  case WM_COMMAND:
  if(LOWORD(w)==Search&&HIWORD(w)==EN_CHANGE)app->refreshPopup();
+ else if(LOWORD(w)==2&&HIWORD(w)==LBN_SELCHANGE)app->updateShortcutDetail();
+ else if(LOWORD(w)==CmdExpand)app->togglePopupSize();
  else if(LOWORD(w)==CmdShortcuts||LOWORD(w)==CmdWorkflows){app->workflowsVisible=LOWORD(w)==CmdWorkflows;app->refreshPopup(true);SetFocus(app->search);}
  else if(LOWORD(w)==CmdManage||LOWORD(w)==CmdNew){bool workflows=app->workflowsVisible;auto key=app->target.executable;app->openEditor();if(workflows)app->openWorkflowEditor(key);}
  else if(LOWORD(w)==CmdExit||LOWORD(w)==IDCANCEL)app->hidePopup();

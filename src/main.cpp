@@ -57,18 +57,20 @@ void App::trayMenu() {
 void App::onForeground(HWND window) {
  // Events may already be stale by the time our message queue receives them.
  if(window!=GetForegroundWindow())return;
- DWORD pid=0;GetWindowThreadProcessId(window,&pid);if(pid==GetCurrentProcessId())return;
- auto next=identify(window);target=std::move(next);if(popup&&IsWindowVisible(popup))refreshPopup(true);
+ DWORD pid=0;GetWindowThreadProcessId(window,&pid);if(!pid||pid==GetCurrentProcessId())return;
+ // Tray/menu activation and transient failures are not a new application context.
+ wchar_t cls[96]{};GetClassNameW(window,cls,96);
+ if(wcscmp(cls,L"Shell_TrayWnd")==0||wcscmp(cls,L"Shell_SecondaryTrayWnd")==0||wcscmp(cls,L"NotifyIconOverflowWindow")==0||wcscmp(cls,L"TopLevelWindowForOverflowXamlIsland")==0||wcscmp(cls,L"#32768")==0||(GetWindowLongPtrW(window,GWL_EXSTYLE)&WS_EX_NOACTIVATE))return;
+ auto next=identify(window);if(!next.window||next.executable.empty())return;
+ if(next.window==target.window&&next.process==target.process&&next.executable==target.executable)return;
+ target=std::move(next);if(popup&&IsWindowVisible(popup))refreshPopup(true);
 }
 Profile* App::currentProfile() { for(auto& p:store.profiles)if(p.executable==target.executable)return &p;return nullptr; }
 void App::togglePopup() {
  if(popup&&IsWindowVisible(popup)){hidePopup();return;}
  onForeground(GetForegroundWindow());if(!targetAlive(target)){error(L"Activate an application window first, then press the activation shortcut.");return;}
  if(!popup)createPopup();refreshPopup(true);
- MONITORINFO info{sizeof(info)};GetMonitorInfoW(MonitorFromWindow(target.window,MONITOR_DEFAULTTONEAREST),&info);
- UINT dpi=GetDpiForWindow(target.window);int width=MulDiv(740,dpi,96),height=MulDiv(480,dpi,96);
- width=(std::min)(width,static_cast<int>(info.rcWork.right-info.rcWork.left));height=(std::min)(height,static_cast<int>(info.rcWork.bottom-info.rcWork.top));
- SetWindowPos(popup,HWND_TOPMOST,info.rcWork.right-width-((info.rcWork.right-info.rcWork.left-width)/2),info.rcWork.top+((info.rcWork.bottom-info.rcWork.top-height)/2),width,height,SWP_NOACTIVATE|SWP_SHOWWINDOW);
+ positionPopup(true);
  layoutPopup();SetForegroundWindow(popup);SetFocus(search);
 }
 void App::hidePopup(bool restore){if(!popup)return;bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}

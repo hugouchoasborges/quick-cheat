@@ -16,3 +16,6 @@ Light tokens: background #FAF9F7, panel #F1F0ED, field #FFFFFF, selection #E6E3E
 
 ## Local workflows
 Native themed buttons switch Shortcuts/Workflows only for profiles with saved workflows. A native tree provides expand/collapse and step selection; a wrapping, scrollable read-only field exposes full step text. Execute is hidden and disabled in this view. A separate owned native editor provides title, workflow and step lists, multiline editing, ordered-step actions and explicit Save workflow. Unsaved changes require confirmation before closing or switching guides.
+
+## Reading space and context retention
+Default popup: 1040x760 logical pixels, constrained to monitor work area. Native resize borders, header dragging and Expand/Restore retain preferred dimensions for the session. Workflows use a side-by-side guide/detail layout at 960 logical pixels or wider, and proportional stacking below that. Shortcut descriptions wrap; rows are capped at the native 255 physical pixel limit, with complete selected text in a dedicated reader when capped. Own UI, tray/menu transitions and failed foreground identification preserve the last valid external app context.
