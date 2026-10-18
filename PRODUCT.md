@@ -22,3 +22,9 @@ Alpha.3: PIN defaults off; popup hides on focus loss while tray stays running. P
 Alpha.4: workflow steps accept basic Markdown and local image attachments, rendered in the main popup. A native attachment picker copies images into the data folder. Markdown and relative references remain schema v3 text. Backups include the attachments directory; guides remain local reference material. External image downloads and HTML execution are excluded.
 
 Alpha.7: Settings separates General, Shortcuts and Workflows. General owns appearance, activation and data-folder access. Content tabs share the selected application; the workflow editor is embedded, with no second management window. Keep explicit saves and discard confirmation across tab/app changes and close. Popup actions enter their content tab; tray Settings enters General.
+
+## Portable collections (0.3 candidate)
+Per-application JSON import/export includes saved shortcuts, workflows and referenced PNG images. Add skips exact duplicates; Replace confirms and changes only the matching application. One active profile per executable; global settings and category view state remain local. Community publishing, voting and installed variants are future work.
+
+## Settings navigation (0.3 candidate)
+Gear beside PIN opens General in the same main window; tray Settings uses the same panel. Back returns to the contextual library, confirming pending edits. Escape/focus dismissal preserve drafts. The separate settings window and footer Manage actions are superseded.

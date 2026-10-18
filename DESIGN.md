@@ -36,3 +36,9 @@ One Settings window uses themed native General / Shortcuts / Workflows navigatio
 
 ## Complete workflow reading
 Selecting a workflow tree parent renders its title and all numbered steps, separated by compact horizontal rules; a child selection remains focused on that step. Parse each step independently into the same Rich Edit control, preserving Markdown boundaries, link offsets, palette, resize cache and scrolling. The text limit accommodates 128 stored steps. Keep eight attached-image previews per reader for bounded memory, with an explicit placeholder directing users to a step for further images. Clear all rendered content on hide/tab switch. Storage and editing remain unchanged.
+
+## Portable collection actions
+Shortcuts and Workflows share native Import/Export buttons beside the application selector. Import previews identity and counts with Add, Replace and Cancel; replacement requires confirmation. Export requires saved edits and is available only for a profile containing shortcuts or workflows. Native dialogs follow Windows appearance.
+
+## Settings inside the main window (0.3.0-alpha.2)
+The footer Manage actions are replaced by an authored GDI gear directly left of PIN. Settings is a child panel in the same popup HWND, with General/Shortcuts/Workflows tabs and an authored Back arrow in the header. Header icons retain accessible labels and tooltips. Back/gear return after discard confirmation. Escape/Close/unpinned focus loss retain the draft while hiding to tray. Own dialogs do not trigger dismissal; process exit checks hidden drafts. Native scrolling handles small windows. This supersedes older descriptions of a separate owned settings window.

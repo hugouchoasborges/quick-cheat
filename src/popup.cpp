@@ -49,13 +49,14 @@ void App::createPopup(){
  rows=control(popup,WC_LISTVIEWW,L"",LVS_SINGLESEL|LVS_SHOWSELALWAYS|LVS_AUTOARRANGE|WS_TABSTOP,2);ListView_SetView(rows,LV_VIEW_TILE);ListView_SetExtendedListViewStyle(rows,LVS_EX_DOUBLEBUFFER|LVS_EX_LABELTIP);SetWindowSubclass(rows,rowProc,1,reinterpret_cast<DWORD_PTR>(this));
  empty=control(popup,L"STATIC",L"",SS_CENTER,3);
  shortcutDetail=control(popup,L"EDIT",L"",ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL|WS_VSCROLL|WS_TABSTOP,9);SetWindowSubclass(shortcutDetail,detailProc,1,reinterpret_cast<DWORD_PTR>(this));
- control(popup,L"BUTTON",L"Manage shortcuts",BS_PUSHBUTTON|WS_TABSTOP,CmdManage);
+ control(popup,L"BUTTON",L"Settings",BS_PUSHBUTTON|WS_TABSTOP,CmdManage);
+ control(popup,L"BUTTON",L"Back to library",BS_PUSHBUTTON|WS_TABSTOP,CmdBack);
  auto executeButton=control(popup,L"BUTTON",L"Execute",BS_PUSHBUTTON|WS_TABSTOP,CmdExecute);SetWindowSubclass(executeButton,executeProc,3,reinterpret_cast<DWORD_PTR>(this));
  control(popup,L"BUTTON",L"Esc",BS_PUSHBUTTON|WS_TABSTOP,CmdExit);
  control(popup,L"BUTTON",L"Expand",BS_PUSHBUTTON|WS_TABSTOP,CmdExpand);
  control(popup,L"BUTTON",L"Pin popup",BS_PUSHBUTTON|WS_TABSTOP,CmdPin);control(popup,L"BUTTON",L"Close popup",BS_PUSHBUTTON|WS_TABSTOP,CmdPopupClose);
  auto tips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP|TTS_NOPREFIX,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,popup,nullptr,instance,nullptr);
- for(auto id:{CmdPin,CmdPopupClose}){TOOLINFOW tool{sizeof(tool)};tool.uFlags=TTF_IDISHWND|TTF_SUBCLASS;tool.hwnd=popup;tool.uId=reinterpret_cast<UINT_PTR>(GetDlgItem(popup,id));tool.lpszText=const_cast<wchar_t*>(id==CmdPin?L"Pin / unpin popup":L"Close popup (Esc)");SendMessageW(tips,TTM_ADDTOOLW,0,reinterpret_cast<LPARAM>(&tool));}
+ for(auto id:{CmdManage,CmdBack,CmdPin,CmdPopupClose}){TOOLINFOW tool{sizeof(tool)};tool.uFlags=TTF_IDISHWND|TTF_SUBCLASS;tool.hwnd=popup;tool.uId=reinterpret_cast<UINT_PTR>(GetDlgItem(popup,id));tool.lpszText=const_cast<wchar_t*>(id==CmdManage?L"Settings":id==CmdBack?L"Back to library":id==CmdPin?L"Pin / unpin popup":L"Close popup (Esc)");SendMessageW(tips,TTM_ADDTOOLW,0,reinterpret_cast<LPARAM>(&tool));}
  footer=control(popup,L"STATIC",L"",SS_LEFT,4);createWorkflowPopup();theme.style(popup);layoutPopup();
 }
 void App::layoutPopup(){
@@ -64,16 +65,24 @@ void App::layoutPopup(){
  for(HWND c=GetWindow(popup,GW_CHILD);c;c=GetWindow(c,GW_HWNDNEXT))SendMessageW(c,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);
  SendMessageW(search,WM_SETFONT,reinterpret_cast<WPARAM>(nextBold),TRUE);SendMessageW(heading,WM_SETFONT,reinterpret_cast<WPARAM>(nextBold),TRUE);SendMessageW(footer,WM_SETFONT,reinterpret_cast<WPARAM>(nextSmall),TRUE);
  if(font)DeleteObject(font);if(labelFont)DeleteObject(labelFont);if(bold)DeleteObject(bold);font=next;labelFont=nextSmall;bold=nextBold;popupDpi=dpi;}
- bounds(heading,104,14,width-208,32,dpi);bounds(search,46,62,width-62,30,dpi);
+ bounds(heading,148,14,width-296,32,dpi);bounds(search,46,62,width-62,30,dpi);
+ bounds(GetDlgItem(popup,CmdManage),width-(popupPinned?140:96),12,36,36,dpi);bounds(GetDlgItem(popup,CmdBack),16,12,36,36,dpi);ShowWindow(GetDlgItem(popup,CmdBack),settingsVisible?SW_SHOWNA:SW_HIDE);
+ SetPropW(GetDlgItem(popup,CmdManage),L"QcSelected",reinterpret_cast<HANDLE>(settingsVisible));
  bounds(GetDlgItem(popup,CmdPin),width-(popupPinned?96:52),12,36,36,dpi);bounds(GetDlgItem(popup,CmdPopupClose),width-52,12,36,36,dpi);ShowWindow(GetDlgItem(popup,CmdPopupClose),popupPinned?SW_SHOWNA:SW_HIDE);
  SetWindowTextW(GetDlgItem(popup,CmdPin),popupPinned?L"Unpin popup":L"Pin popup");SetPropW(GetDlgItem(popup,CmdPin),L"QcSelected",reinterpret_cast<HANDLE>(popupPinned));
  bounds(rows,8,118,width-16,height-186,dpi);bounds(empty,48,198,width-96,104,dpi);
  bounds(GetDlgItem(popup,CmdExit),16,height-44,46,30,dpi);bounds(footer,76,height-38,width-488,24,dpi);
- bounds(GetDlgItem(popup,CmdExpand),width-392,height-44,96,30,dpi);
- bounds(GetDlgItem(popup,CmdManage),width-280,height-44,148,30,dpi);bounds(GetDlgItem(popup,CmdExecute),width-120,height-44,104,30,dpi);
+ bounds(GetDlgItem(popup,CmdExpand),width-228,height-44,96,30,dpi);
+ bounds(GetDlgItem(popup,CmdExecute),width-120,height-44,104,30,dpi);
  layoutWorkflowPopup();
  layoutShortcutTiles();
  updateShortcutDetail();
+ if(settingsVisible){
+  for(HWND child=GetWindow(popup,GW_CHILD);child;child=GetWindow(child,GW_HWNDNEXT)){int id=GetDlgCtrlID(child);if(child!=heading&&id!=CmdManage&&id!=CmdBack&&id!=CmdPin&&id!=CmdPopupClose&&(!editor||child!=editor->window))ShowWindow(child,SW_HIDE);}
+  SetWindowTextW(heading,L"Settings");if(editor&&editor->window){bounds(editor->window,0,54,width,height-54,dpi);ShowWindow(editor->window,SW_SHOWNA);editor->layout();}
+ }else{
+  ShowWindow(search,SW_SHOWNA);ShowWindow(heading,SW_SHOWNA);ShowWindow(footer,SW_SHOWNA);ShowWindow(GetDlgItem(popup,CmdExit),SW_SHOWNA);ShowWindow(GetDlgItem(popup,CmdExpand),SW_SHOWNA);
+ }
  InvalidateRect(popup,nullptr,TRUE);
 }
 void App::refreshPopup(bool clearSearch){
@@ -84,7 +93,7 @@ void App::refreshPopup(bool clearSearch){
  std::stable_sort(visibleRows.begin(),visibleRows.end(),[&](size_t a,size_t b){return _wcsicmp(profile->shortcuts[a].category.c_str(),profile->shortcuts[b].category.c_str())<0;});
  }populateShortcutTiles();
  ShowWindow(rows,visibleRows.empty()?SW_HIDE:SW_SHOWNA);ShowWindow(empty,visibleRows.empty()?SW_SHOWNA:SW_HIDE);
- SetWindowTextW(empty,query.empty()?L"No shortcuts for this application yet.\n\nOpen Manage shortcuts to add your first one.":L"No matching shortcuts.\n\nTry another description, category or key combination.");
+ SetWindowTextW(empty,query.empty()?L"No shortcuts for this application yet.\n\nOpen Settings > Shortcuts to add your first one.":L"No matching shortcuts.\n\nTry another description, category or key combination.");
  if(!visibleRows.empty())moveShortcutSelection(1);EnableWindow(GetDlgItem(popup,CmdExecute),selectedShortcut()>=0);
  SendMessageW(rows,WM_SETREDRAW,TRUE,0);SetWindowTextW(footer,(std::to_wstring(visibleRows.size())+(visibleRows.size()==1?L" shortcut":L" shortcuts")+L"  ·  Quick Cheat").c_str());
  refreshWorkflowPopup();updatingPopup=false;layoutPopup();
@@ -95,7 +104,7 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  if(!app)return DefWindowProcW(h,msg,w,l);
  switch(msg){
  case WM_MOUSEACTIVATE:{HWND external=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(external,&pid);if(pid!=GetCurrentProcessId()&&external!=app->target.window){auto previous=app->target.window;auto process=app->target.process;app->onForeground(external);if(previous!=app->target.window||process!=app->target.process){ListView_SetItemState(app->rows,-1,0,LVIS_SELECTED|LVIS_FOCUSED);EnableWindow(GetDlgItem(h,CmdExecute),FALSE);}}return MA_ACTIVATE;}
- case WM_ACTIVATE:if(LOWORD(w)==WA_INACTIVE&&!app->popupPinned)app->hidePopup(false);return 0;
+ case WM_ACTIVATE:if(LOWORD(w)==WA_INACTIVE&&!app->popupPinned){DWORD process{};GetWindowThreadProcessId(reinterpret_cast<HWND>(l),&process);if(process!=GetCurrentProcessId())app->hidePopup(false);}return 0;
  case WM_NCHITTEST:{auto hit=DefWindowProcW(h,msg,w,l);if(hit!=HTCLIENT)return hit;POINT point{static_cast<short>(LOWORD(l)),static_cast<short>(HIWORD(l))};ScreenToClient(h,&point);auto child=ChildWindowFromPointEx(h,point,CWP_SKIPINVISIBLE|CWP_SKIPDISABLED|CWP_SKIPTRANSPARENT);if(point.y<MulDiv(54,GetDpiForWindow(h),96)&&(child==h||child==app->heading))return HTCAPTION;return HTCLIENT;}
  case WM_NCLBUTTONDBLCLK:if(w==HTCAPTION){app->togglePopupSize();return 0;}break;
  case WM_GETMINMAXINFO:{auto* limits=reinterpret_cast<MINMAXINFO*>(l);MONITORINFO monitor{sizeof(monitor)};if(GetMonitorInfoW(MonitorFromWindow(h,MONITOR_DEFAULTTONEAREST),&monitor)){UINT dpi=GetDpiForWindow(h);LONG width=monitor.rcWork.right-monitor.rcWork.left,height=monitor.rcWork.bottom-monitor.rcWork.top;limits->ptMinTrackSize={(std::min<LONG>)(MulDiv(720,dpi,96),width),(std::min<LONG>)(MulDiv(480,dpi,96),height)};limits->ptMaxTrackSize={width,height};}return 0;}
@@ -119,7 +128,10 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  else if(LOWORD(w)==CmdPopupClose)app->hidePopup();
  else if(LOWORD(w)==CmdExpand)app->togglePopupSize();
  else if(LOWORD(w)==CmdShortcuts||LOWORD(w)==CmdWorkflows){app->workflowsVisible=LOWORD(w)==CmdWorkflows;app->refreshPopup(true);SetFocus(app->search);}
- else if(LOWORD(w)==CmdManage||LOWORD(w)==CmdNew){bool workflows=app->workflowsVisible;auto key=app->target.executable;app->openEditor();if(workflows)app->openWorkflowEditor(key);}
+ else if(LOWORD(w)==CmdManage){if(app->settingsVisible)app->closeSettings();else app->openEditor(0);}
+ else if(LOWORD(w)==CmdBack)app->closeSettings();
+ else if(LOWORD(w)==CmdNew)app->openEditor(1);
+ else if(LOWORD(w)==IDOK&&app->settingsVisible&&app->editor)SendMessageW(app->editor->window,WM_COMMAND,IDOK,0);
  else if(LOWORD(w)==CmdExit||LOWORD(w)==IDCANCEL)app->hidePopup();
  else if(LOWORD(w)==CmdExecute){int selected=app->selectedShortcut();bool valid=selected>=0&&selected==app->pressedRow&&app->pressedWindow==app->target.window&&app->pressedProcess==app->target.process;app->pressedRow=-1;if(valid)app->execute(static_cast<size_t>(selected));}
  return 0;

@@ -8,7 +8,7 @@ Built with C++ and native Windows controls, with a focus on speed and low memory
 
 ## Download
 
-[Download Quick Cheat for Windows x64 — v0.2.0-alpha.8](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.2.0-alpha.8)
+[Download Quick Cheat for Windows x64 — v0.3.0-alpha.2](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.3.0-alpha.2)
 
 Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additional runtime is needed. This is an early alpha release.
 
@@ -38,14 +38,14 @@ Screenshots were captured from the released app using isolated, fictional demo d
 
 1. Launch Quick Cheat. It runs in the Windows notification area.
 2. Open an application and press **Ctrl+Alt+Space** to show its shortcuts.
-3. Choose **Manage shortcuts** to add descriptions, categories and key combinations.
+3. Open the **gear → Shortcuts** to add descriptions, categories and key combinations.
 4. Search or select a shortcut, then double-click it, click **Execute** or press Enter. Press **Esc** to close the popup.
 
 You can also open the library from the tray icon. If the default hotkey is already in use on first launch, Quick Cheat tries **Ctrl+Alt+Shift+Space** and notifies you. Change the activation hotkey in the library. Release held modifier keys before executing a shortcut.
 
 ## Settings
 
-Open **Settings...** from the tray menu. Three tabs keep global preferences separate from application content:
+Use the **gear** to the left of PIN, or open **Settings...** from the tray menu. Three tabs keep global preferences separate from application content:
 
 - **General:** appearance, activation shortcut and access to your local data folder.
 - **Shortcuts:** choose an application, organize categories, and add, edit or record shortcuts.
@@ -53,7 +53,17 @@ Open **Settings...** from the tray menu. Three tabs keep global preferences sepa
 
 ![General settings in dark mode](docs/images/settings-general-dark.png)
 
-The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Popup management buttons open the corresponding tab directly.
+The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Use the gear beside PIN to open Settings in the same main window. Back returns to the library after confirming pending edits. Escape and unpinned focus loss hide the window while retaining the draft.
+
+## Portable collections
+
+Share an application's shortcuts and workflows as a single `.quickcheat.json` file, including Markdown and attached PNG images. In **Settings → Shortcuts** or **Workflows**, use **Export collection...** after saving your edits, or **Import collection...** to preview a file.
+
+Choose **Add** to keep existing content and skip exact duplicates, or **Replace** to replace that application's content after confirmation. Other applications and global settings stay unchanged. Each application still has one active profile.
+
+![Portable collections in dark settings](docs/images/collections-settings-dark.png)
+
+See the [format and limits](docs/collection-format.md) and [acceptance checklist](docs/validation-0.3.0-alpha.1.md). This release adds local file sharing; community browsing and voting remain planned.
 
 ## Local data
 
@@ -71,7 +81,7 @@ Each shortcut contains one key combination. Docks, community sharing, an install
 
 ## Workflows
 
-Create local step-by-step guides for each application. Open **Settings → Workflows** and choose an application, or use **Manage workflows** in the popup. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
+Create local step-by-step guides for each application. Open **Settings → Workflows** and choose an application using the gear beside PIN. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
 Write step explanations in Markdown: headings, **bold**, *italic*, lists, checklists, quotes, code and links render in the popup. Click **Attach image...** in the step editor to copy a PNG, JPEG, BMP or GIF into your local library and insert its Markdown reference. Save the workflow, then select the step in the popup to see the formatted explanation and image. GIFs use the first frame.
 
@@ -101,7 +111,7 @@ Exit Quick Cheat before replacing the executable. This release reads existing v1
 
 Install Visual Studio 2022 with **Desktop development with C++**, the Windows SDK and CMake tools. In PowerShell, run `./scripts/build.ps1` to build Windows x64 Release and run the headless tests. The executable is written to `build/Release/QuickCheat.exe`.
 
-Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` captures the popup and settings using separate demo data. See the [release notes](docs/releases/0.2.0-alpha.8.md) and [validation notes](docs/validation-0.2.0-alpha.8.md).
+Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` captures the popup and settings using separate demo data. See the [release notes](docs/releases/0.3.0-alpha.2.md) and [validation notes](docs/validation-0.3.0-alpha.2.md).
 
 Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
 

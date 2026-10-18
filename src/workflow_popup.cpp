@@ -39,7 +39,7 @@ void App::layoutWorkflowPopup(){
  if(!workflowsVisible&&workflowDetail)clearMarkdown(workflowDetail);
  ShowWindow(GetDlgItem(popup,CmdExecute),workflowsVisible?SW_HIDE:SW_SHOWNA);
  SetPropW(GetDlgItem(popup,CmdShortcuts),L"QcSelected",reinterpret_cast<HANDLE>(!workflowsVisible));SetPropW(GetDlgItem(popup,CmdWorkflows),L"QcSelected",reinterpret_cast<HANDLE>(workflowsVisible));
- SetWindowTextW(GetDlgItem(popup,CmdManage),workflowsVisible?L"Manage workflows":L"Manage shortcuts");
+
  if(workflowsVisible){ShowWindow(rows,SW_HIDE);ShowWindow(empty,SW_HIDE);}
 }
 void App::refreshWorkflowPopup(){

@@ -12,16 +12,16 @@ Editor::~Editor(){if(window)DestroyWindow(window);if(font)DeleteObject(font);if(
 void Editor::show() {
  if(!window) {
  WNDCLASSW cls{};cls.hInstance=app.instance;cls.lpfnWndProc=proc;cls.lpszClassName=L"QuickCheatEditor";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(app.instance,MAKEINTRESOURCEW(1));RegisterClassW(&cls);
- window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat — Settings",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,1120,860,app.popupPinned?app.popup:nullptr,nullptr,app.instance,this);
+ window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat — Settings",WS_CHILD|WS_CLIPCHILDREN|WS_VSCROLL|WS_HSCROLL,0,0,0,0,app.popup,reinterpret_cast<HMENU>(231),app.instance,this);
  }
- if(IsWindowVisible(window)){ShowWindow(window,SW_RESTORE);SetForegroundWindow(window);return;}
+ if(app.settingsVisible)return;
  draft=app.store;
  if(!app.target.executable.empty()) {
  auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==app.target.executable;});
  if(it==draft.profiles.end()&&draft.profiles.size()<256){draft.profiles.push_back({app.target.executable,app.target.name,{}});profileIndex=static_cast<int>(draft.profiles.size()-1);}else if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());
  }
  refreshProfiles();SetWindowTextW(trigger,formatChord(draft.trigger).c_str());SendMessageW(themeSelect,CB_SETCURSEL,static_cast<UINT>(draft.theme),0);SetWindowTextW(status,L"Stored on this computer. Select a shortcut to edit, or create a new one.");
- updateWorkflowPage();app.theme.style(window);ShowWindow(window,SW_SHOW);SetForegroundWindow(window);layout();
+ updateWorkflowPage();app.theme.style(window);ShowWindow(window,SW_SHOW);layout();
 }
 void Editor::refreshProfiles() {
  refreshing=true;SendMessageW(profiles,CB_RESETCONTENT,0,0);
@@ -48,7 +48,7 @@ void Editor::addProfile() {
  if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());else if(draft.profiles.size()<256){draft.profiles.push_back({exe,exe.substr(0,exe.size()-4),{}});profileIndex=static_cast<int>(draft.profiles.size()-1);}else{app.error(L"The maximum of 256 application profiles has been reached.",window);return;}
  if(!persist())draft=app.store;refreshProfiles();
 }
-bool Editor::persist(){if(!app.commit(draft))return false;SetWindowTextW(status,L"Saved locally.");return true;}
+bool Editor::persist(){if(!app.commit(draft))return false;SetWindowTextW(status,L"Saved locally.");updateCollectionActions();return true;}
 void Editor::saveShortcut() {
  if(profileIndex<0){app.error(L"Choose an application executable first.",window);return;}
  auto chord=parseChord(textOf(keys));if(!chord){app.error(L"Enter a combination such as Ctrl+S, Ctrl+Shift+F10 or Alt+Enter. Use Plus for the + key.",window);return;}
@@ -93,16 +93,18 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  for(int id:{LabelTheme,LabelTrigger,DataLabel,FormTitle})SetPropW(GetDlgItem(h,id),L"QcHeading",reinterpret_cast<HANDLE>(1));
  e->themeSelect=control(h,L"COMBOBOX",L"",CBS_DROPDOWNLIST|WS_TABSTOP,ThemeSelect);for(auto label:{L"System",L"Light",L"Dark"})SendMessageW(e->themeSelect,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(label));
  control(h,L"STATIC",L"Application",0,LabelApp);e->profiles=control(h,L"COMBOBOX",L"",CBS_DROPDOWNLIST|WS_VSCROLL|WS_TABSTOP,Profiles);control(h,L"BUTTON",L"Browse application...",WS_TABSTOP,Browse);
+ control(h,L"BUTTON",L"Import collection...",WS_TABSTOP,ImportCollection);control(h,L"BUTTON",L"Export collection...",WS_TABSTOP,ExportCollection);
  e->list=control(h,WC_LISTVIEWW,L"",LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|WS_TABSTOP,Entries);ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_DOUBLEBUFFER);
  const wchar_t* columns[]={L"Description",L"Category",L"Keys"};for(int i=0;i<3;++i){LVCOLUMNW c{};c.mask=LVCF_TEXT|LVCF_WIDTH;c.cx=150;c.pszText=const_cast<wchar_t*>(columns[i]);ListView_InsertColumn(e->list,i,&c);}
  control(h,L"STATIC",L"Description",0,LabelTitle);e->title=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Title);SendMessageW(e->title,EM_SETLIMITTEXT,240,0);
  control(h,L"STATIC",L"Category (choose or type)",0,LabelCategory);e->category=control(h,L"COMBOBOX",L"",CBS_DROPDOWN|CBS_AUTOHSCROLL|WS_VSCROLL|WS_TABSTOP,Category);SendMessageW(e->category,CB_LIMITTEXT,80,0);
  control(h,L"STATIC",L"Keyboard shortcut",0,LabelKeys);e->keys=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Keys);SendMessageW(e->keys,EM_SETLIMITTEXT,100,0);SetWindowSubclass(e->keys,captureProc,1,reinterpret_cast<DWORD_PTR>(e));control(h,L"BUTTON",L"Record",WS_TABSTOP,Record);
  control(h,L"BUTTON",L"Save shortcut",WS_TABSTOP,Save);control(h,L"BUTTON",L"New shortcut",WS_TABSTOP,New);control(h,L"BUTTON",L"Delete",WS_TABSTOP,Delete);control(h,L"BUTTON",L"Remove application",WS_TABSTOP,RemoveProfile);
- control(h,L"BUTTON",L"Manage workflows",WS_TABSTOP,CmdManageWorkflows);
  control(h,L"STATIC",L"Activation shortcut",0,LabelTrigger);e->trigger=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Trigger);SendMessageW(e->trigger,EM_SETLIMITTEXT,100,0);control(h,L"BUTTON",L"Apply",WS_TABSTOP,Apply);
  e->status=control(h,L"STATIC",L"",0,Status);return 0;}
  case WM_SIZE:e->layout();return 0;
+ case WM_VSCROLL:case WM_HSCROLL:e->scroll(msg,w);return 0;
+ case WM_MOUSEWHEEL:e->scroll(WM_VSCROLL,MAKEWPARAM(GET_WHEEL_DELTA_WPARAM(w)>0?SB_PAGEUP:SB_PAGEDOWN,0));return 0;
  case WM_PAINT:e->paint();return 0;
  case WM_ERASEBKGND:{RECT r;GetClientRect(h,&r);FillRect(reinterpret_cast<HDC>(w),&r,e->app.theme.background);return 1;}
  case WM_CTLCOLORSTATIC:e->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));return reinterpret_cast<LRESULT>(e->app.theme.background);
@@ -116,6 +118,7 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  case CmdManageWorkflows:case TabWorkflows:e->selectPage(2);break;
  case TabGeneral:e->selectPage(0);break;case TabShortcuts:e->selectPage(1);break;
  case OpenData:ShellExecuteW(h,L"open",e->app.file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;
+ case ImportCollection:e->importApplicationCollection();break;case ExportCollection:e->exportApplicationCollection();break;
  case ThemeSelect:if(HIWORD(w)==CBN_SELCHANGE&&!e->refreshing)e->applyAppearance();break;
  case Profiles:if(HIWORD(w)==CBN_SELCHANGE&&!e->refreshing)e->selectProfile(static_cast<int>(SendMessageW(e->profiles,CB_GETCURSEL,0,0)));break;
  case Browse:if(e->leavePage()){e->addProfile();e->updateWorkflowPage();e->layout();}break;case Save:e->saveShortcut();break;case New:e->clearFields();SetFocus(e->title);break;case Delete:e->deleteShortcut();break;case RemoveProfile:e->deleteProfile();break;case Apply:e->applyTrigger();break;

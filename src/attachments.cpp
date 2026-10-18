@@ -27,6 +27,7 @@ bool managedReference(const std::wstring& reference){
  return true;
 }
 }
+bool isWorkflowImageReference(const std::wstring& reference){return managedReference(reference);}
 bool importWorkflowImage(const std::filesystem::path& source,const std::filesystem::path& dataDirectory,std::wstring& reference,std::wstring& error){
  error.clear();PreparedImage image;if(!prepare(source,1600,1600,10*1024*1024,24000000,image,error))return false;
  GUID id{};wchar_t name[40]{};if(FAILED(CoCreateGuid(&id))||!StringFromGUID2(id,name,40))return fail(error,L"Cannot generate an attachment name.");
