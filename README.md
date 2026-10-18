@@ -2,7 +2,7 @@
 
 A small Windows shortcut reference and launcher. C++20, Win32 and native Windows controls; no web runtime, background polling or network access.
 
-## Current candidate: 0.1.0-alpha.3
+## Current candidate: 0.1.0-alpha.4
 
 - Tray-resident app with a configurable global popup toggle (default **Ctrl+Alt+Space**).
 - If that default is occupied on first launch, tries **Ctrl+Alt+Shift+Space** and shows a notification. Existing configured conflicts are reported; use the tray menu to change activation.
@@ -15,7 +15,7 @@ A small Windows shortcut reference and launcher. C++20, Win32 and native Windows
 ## Run
 
 Run `QuickCheat.exe`. The application starts in the notification area; Windows may put its icon under **Show hidden icons**. Right-click it and choose **Manage shortcuts** (or double-click the icon).
-Activate your application and press the popup toggle. Search receives keyboard focus while Quick Cheat retains the external application as its target. Type a description, category or key combination; use Up/Down or click a row to select it, then click **Execute** (or press Enter from search). Toggle again or use Esc to close and restore the target when possible. **Ctrl+,** from search opens management.
+Activate your application and press the popup toggle. Search receives keyboard focus while Quick Cheat retains the external application as its target. Type a description, category or key combination; use Up/Down or click a row to select it, then double-click the row, click **Execute**, or press Enter from search. Toggle again or use Esc to close and restore the target when possible. **Ctrl+,** from search opens management.
 For a new application, open **Manage shortcuts**, enter a description, category and key combination, then click **Save shortcut**. Choose **Appearance > System / Light / Dark** to change the shared theme immediately. Reactivate the application and open its popup to use your shortcuts.
 Use **New shortcut** to add another entry. Selecting a row edits that entry. Category names are entered directly or selected from the existing list; empty categories appear as **General**. **Browse application** adds an installed or portable `.exe` profile.
 Key syntax includes `Ctrl+S`, `Ctrl+Shift+F10`, `Alt+Enter`, `Win+Left`, `Ctrl+Plus`, `PageDown`. The **Record** button captures supported single combinations; Esc cancels recording. Release physical modifier keys before invoking Execute.

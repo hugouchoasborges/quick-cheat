@@ -9,6 +9,7 @@ bool groupStart(App& app,size_t row){
 void executeSelected(App& app){auto selected=SendMessageW(app.rows,LB_GETCURSEL,0,0);if(selected!=LB_ERR)app.execute(static_cast<size_t>(selected));}
 LRESULT CALLBACK rowProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
  auto* app=reinterpret_cast<App*>(value);
+ if(msg==WM_LBUTTONDBLCLK){auto hit=SendMessageW(h,LB_ITEMFROMPOINT,0,l);auto count=SendMessageW(h,LB_GETCOUNT,0,0);if(!HIWORD(hit)&&LOWORD(hit)<count){SendMessageW(h,LB_SETCURSEL,LOWORD(hit),0);executeSelected(*app);}return 0;}
  if(msg==WM_LBUTTONDOWN){auto hit=SendMessageW(h,LB_ITEMFROMPOINT,0,l);if(!HIWORD(hit)){SendMessageW(h,LB_SETCURSEL,LOWORD(hit),0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);SetFocus(app->search);InvalidateRect(h,nullptr,FALSE);}return 0;}
  if(msg==WM_LBUTTONUP)return 0;
  if(msg==WM_KEYDOWN&&w==VK_RETURN){executeSelected(*app);return 0;}

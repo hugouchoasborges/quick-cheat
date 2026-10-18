@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-alpha.4 — 2026-10-18
+
+Double-click a shortcut row to execute it. Single-click selection, Execute and Enter remain available. Local data format is unchanged.
+
 ## 0.1.0-alpha.3 — 2026-10-18
 
 Added an original lavender keyboard-key/Q icon as embedded Windows resources for the executable, tray and window classes. Ten icon sizes from 16 to 256px, with reproducible SVG/PNG/ICO assets. Added a desktop-shortcut script pointing at the current development build and verified all embedded icon sizes. No shortcut execution or theme behavior changes.
