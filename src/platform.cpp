@@ -5,7 +5,7 @@ std::wstring textOf(HWND control) {
  int n=GetWindowTextLengthW(control);std::wstring text(static_cast<size_t>(n)+1,L'\0');GetWindowTextW(control,text.data(),n+1);text.resize(n);return text;
 }
 HWND control(HWND parent,const wchar_t* cls,const wchar_t* text,DWORD style,int id) {
- return CreateWindowExW((wcscmp(cls,L"EDIT")==0||wcscmp(cls,WC_LISTVIEWW)==0)?WS_EX_CLIENTEDGE:0,cls,text,WS_CHILD|WS_VISIBLE|style,0,0,0,0,parent,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),GetModuleHandleW(nullptr),nullptr);
+ return CreateWindowExW(0,cls,text,WS_CHILD|WS_VISIBLE|style,0,0,0,0,parent,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),GetModuleHandleW(nullptr),nullptr);
 }
 void bounds(HWND window,int x,int y,int width,int height,UINT dpi) { MoveWindow(window,MulDiv(x,dpi,96),MulDiv(y,dpi,96),MulDiv(width,dpi,96),MulDiv(height,dpi,96),TRUE); }
 Target identify(HWND window) {

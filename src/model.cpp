@@ -63,8 +63,14 @@ std::wstring appKey(const std::wstring& path) {
  auto result=path.substr(path.find_last_of(L"\\/")==path.npos?0:path.find_last_of(L"\\/")+1);
  std::transform(result.begin(),result.end(),result.begin(),[](wchar_t c){return static_cast<wchar_t>(towlower(c));});return result;
 }
+bool matchesShortcut(const Shortcut& shortcut,const std::wstring& query) {
+ auto normalized=[](std::wstring s){for(auto& c:s)c=c==L'+'?L' ':static_cast<wchar_t>(towlower(c));return s;};
+ auto haystack=normalized(shortcut.title+L" "+shortcut.category+L" "+formatChord(shortcut.chord));
+ std::wistringstream words(normalized(query));std::wstring word;
+ while(words>>word)if(haystack.find(word)==haystack.npos)return false;return true;
+}
 bool validStore(const Store& s) {
- if(s.profiles.size()>256||!validChord(s.trigger)||!s.trigger.modifiers||s.trigger.key==VK_F12)return false;
+ if(static_cast<UINT>(s.theme)>2||s.profiles.size()>256||!validChord(s.trigger)||!s.trigger.modifiers||s.trigger.key==VK_F12)return false;
  std::set<std::wstring> apps;size_t count=0;
  for(const auto& p:s.profiles) {
  if(p.executable.empty()||p.executable.size()>260||appKey(p.executable)!=p.executable||!p.executable.ends_with(L".exe")||!apps.insert(p.executable).second||trim(p.name).empty()||p.name.size()>120||p.shortcuts.size()>2048)return false;
@@ -72,7 +78,7 @@ bool validStore(const Store& s) {
  }return true;
 }
 std::wstring serialize(const Store& s) {
- std::wostringstream out;out<<L"QC\t1\nH\t"<<s.trigger.modifiers<<L'\t'<<s.trigger.key<<L'\n';
+ std::wostringstream out;out<<L"QC\t2\nH\t"<<s.trigger.modifiers<<L'\t'<<s.trigger.key<<L"\nT\t"<<static_cast<UINT>(s.theme)<<L'\n';
  for(const auto& p:s.profiles) {
  out<<L"P\t"<<escape(p.executable)<<L'\t'<<escape(p.name)<<L'\n';
  for(const auto& k:p.shortcuts)out<<L"S\t"<<escape(k.title)<<L'\t'<<escape(k.category)<<L'\t'<<k.chord.modifiers<<L'\t'<<k.chord.key<<L'\n';
@@ -82,11 +88,13 @@ std::wstring serialize(const Store& s) {
 bool deserialize(const std::wstring& data,Store& target) {
  // Valid UTF-8 never decodes into more UTF-16 units than its byte count.
  if(data.size()>maxStoreBytes||data.find(L'\0')!=data.npos)return false;
- auto lines=split(data,L'\n');if(lines.size()<4||lines[0]!=L"QC\t1"||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
+ auto lines=split(data,L'\n');if(lines.size()<4||(lines[0]!=L"QC\t1"&&lines[0]!=L"QC\t2")||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
  Store s;auto header=split(lines[1],L'\t');UINT key=0;
  if(header.size()!=3||header[0]!=L"H"||!number(header[1],s.trigger.modifiers)||!number(header[2],key))return false;s.trigger.key=static_cast<WORD>(key);
+ size_t start=2;
+ if(lines[0]==L"QC\t2"){auto theme=split(lines[2],L'\t');UINT mode=0;if(theme.size()!=2||theme[0]!=L"T"||!number(theme[1],mode)||mode>2)return false;s.theme=static_cast<ThemeMode>(mode);start=3;}
  bool inProfile=false;
- for(size_t i=2;i+2<lines.size();++i) {
+ for(size_t i=start;i+2<lines.size();++i) {
  auto row=split(lines[i],L'\t');
  if(row[0]==L"P"&&row.size()==3&&!inProfile) {
  Profile p;if(!unescape(row[1],p.executable)||!unescape(row[2],p.name))return false;s.profiles.push_back(std::move(p));inProfile=true;

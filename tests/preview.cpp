@@ -1,4 +1,5 @@
 #include "storage.hpp"
+#include <commctrl.h>
 #include <psapi.h>
 #include <iostream>
 #include <thread>
@@ -33,8 +34,12 @@ int wmain(int argc,wchar_t** argv){
  std::cout<<"Idle working set MiB="<<memory.WorkingSetSize/1048576.0<<" private MiB="<<memory.PrivateUsage/1048576.0<<" CPU ms over 1 second="<<(ticks(kernel)+ticks(user)-before)/10000.0<<'\n';
  target.start(L"\""+(appExe.parent_path()/L"qc_integration.exe").wstring()+L"\" --target");auto targetWindow=waitWindow(L"QuickCheatIntegrationTarget");SetForegroundWindow(targetWindow);pause(200);
  if(GetForegroundWindow()!=targetWindow)throw std::runtime_error("Cannot focus controlled target");
- PostMessageW(host,WM_HOTKEY,1,0);auto popup=waitWindow(L"QuickCheatPopup");pause(200);capture(popup,output/L"popup.bmp");
- PostMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");pause(200);capture(editor,output/L"editor.bmp");
+ for(auto mode:{qc::ThemeMode::Dark,qc::ThemeMode::Light,qc::ThemeMode::System}){
+ SendMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");
+ SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);pause(120);
+ auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
+ SendMessageW(host,WM_HOTKEY,1,0);auto popup=waitWindow(L"QuickCheatPopup");pause(120);capture(popup,output/(std::wstring(L"popup-")+name+L".bmp"));
+ }
  PostMessageW(host,WM_COMMAND,103,0);WaitForSingleObject(app.pi.hProcess,3000);PostMessageW(targetWindow,WM_CLOSE,0,0);WaitForSingleObject(target.pi.hProcess,3000);
  std::wcout<<L"Screenshots: "<<output.wstring()<<L'\n';return 0;
  }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}

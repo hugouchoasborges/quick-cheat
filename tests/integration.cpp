@@ -35,18 +35,24 @@ int wmain(int argc,wchar_t** argv) {
  app.start(command);HWND host{};check(waitFor([&]{host=FindWindowW(L"QuickCheatHost",nullptr);return host!=nullptr;}),"Host missing");
  target.start(L"\""+std::wstring(self)+L"\" --target");HWND targetWindow{};check(waitFor([&]{targetWindow=FindWindowW(L"QuickCheatIntegrationTarget",nullptr);return targetWindow!=nullptr;}),"Target missing");activate(targetWindow);
  toggle(targetWindow);HWND popup{};check(waitFor([&]{popup=FindWindowW(L"QuickCheatPopup",nullptr);return popup&&IsWindowVisible(popup);}),"Activation hotkey failed");
- check(GetForegroundWindow()==targetWindow,"Popup stole keyboard focus");check(SendMessageW(GetDlgItem(popup,2),LB_GETCOUNT,0,0)==0,"Expected empty popup");
+ check(GetForegroundWindow()==popup,"Popup did not focus search");check(SendMessageW(GetDlgItem(popup,2),LB_GETCOUNT,0,0)==0,"Expected empty popup");
+ check(!IsWindowEnabled(GetDlgItem(popup,105)),"Execute should be disabled for an empty list");
  PostMessageW(host,WM_COMMAND,101,0);HWND editor{};check(waitFor([&]{editor=FindWindowW(L"QuickCheatEditor",nullptr);return editor&&IsWindowVisible(editor);}),"Editor missing");
  SendMessageW(GetDlgItem(editor,203),WM_SETTEXT,0,reinterpret_cast<LPARAM>(L"Integration shortcut"));
  SendMessageW(GetDlgItem(editor,204),WM_SETTEXT,0,reinterpret_cast<LPARAM>(L"Editing"));
  SendMessageW(GetDlgItem(editor,205),WM_SETTEXT,0,reinterpret_cast<LPARAM>(L"F6"));
  SendMessageW(editor,WM_COMMAND,208,0);
  qc::Store saved;std::wstring error;check(qc::loadStore(dir/L"shortcuts.qc",saved,error)&&saved.profiles.size()==1&&saved.profiles[0].shortcuts.size()==1,"Editor did not persist shortcut");
+ for(auto mode:{qc::ThemeMode::Dark,qc::ThemeMode::Light,qc::ThemeMode::System}){SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);check(qc::loadStore(dir/L"shortcuts.qc",saved,error)&&saved.theme==mode,"Theme did not persist");}
  PostMessageW(editor,WM_CLOSE,0,0);activate(targetWindow);toggle(targetWindow);
  check(waitFor([&]{return IsWindowVisible(popup)&&SendMessageW(GetDlgItem(popup,2),LB_GETCOUNT,0,0)==1;}),"Saved shortcut missing from popup");
- check(GetForegroundWindow()==targetWindow,"Popup stole focus after editing");
+ check(GetForegroundWindow()==popup,"Popup search did not receive focus after editing");
+ SendMessageW(GetDlgItem(popup,6),WM_SETTEXT,0,reinterpret_cast<LPARAM>(L"no-match"));check(SendMessageW(GetDlgItem(popup,2),LB_GETCOUNT,0,0)==0&&!IsWindowEnabled(GetDlgItem(popup,105)),"Search empty state failed");
+ SendMessageW(GetDlgItem(popup,6),WM_SETTEXT,0,reinterpret_cast<LPARAM>(L"integration"));check(SendMessageW(GetDlgItem(popup,2),LB_GETCOUNT,0,0)==1,"Search matching failed");
  PostMessageW(GetDlgItem(popup,2),WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(40,30));PostMessageW(GetDlgItem(popup,2),WM_LBUTTONUP,0,MAKELPARAM(40,30));
- check(waitFor([&]{return text(targetWindow)==L"Shortcut received";}),"Click did not execute F6 in target");
+ std::this_thread::sleep_for(std::chrono::milliseconds(100));check(text(targetWindow)!=L"Shortcut received"&&IsWindowVisible(popup),"Selecting a row executed its shortcut");
+ SendMessageW(GetDlgItem(popup,105),BM_CLICK,0,0);
+ check(waitFor([&]{return text(targetWindow)==L"Shortcut received";}),"Execute button did not deliver F6 to target");
  check(waitFor([&]{return !IsWindowVisible(popup);}),"Popup did not hide after execution");
  toggle(targetWindow);check(waitFor([&]{return IsWindowVisible(popup);}),"Popup failed to reopen");
  auto secondExe=dir/L"qc_other_target.exe";std::filesystem::copy_file(self,secondExe);
@@ -56,7 +62,7 @@ int wmain(int argc,wchar_t** argv) {
  Child restarted;restarted.start(command);check(waitFor([&]{host=FindWindowW(L"QuickCheatHost",nullptr);return host!=nullptr;}),"Restart failed");
  activate(targetWindow);toggle(targetWindow);check(waitFor([&]{popup=FindWindowW(L"QuickCheatPopup",nullptr);return popup&&IsWindowVisible(popup)&&SendMessageW(GetDlgItem(popup,2),LB_GETCOUNT,0,0)==1;}),"Shortcut did not survive restart");
  PostMessageW(host,WM_COMMAND,103,0);restarted.wait();PostMessageW(targetWindow,WM_CLOSE,0,0);target.wait();PostMessageW(otherWindow,WM_CLOSE,0,0);other.wait();
- std::cout<<"Integration passed: native hotkey message, empty state, editor save, no focus theft, click execution, foreground switch, restart persistence, clean exit\n";
+ std::cout<<"Integration passed: search focus/filter, theme persistence, selection without execution, explicit Execute, target restoration, foreground switch, restart\n";
  }catch(const std::exception& e){std::cerr<<e.what()<<'\n';result=1;}
  std::error_code ec;if(result==0)std::filesystem::remove_all(dir,ec);else std::wcerr<<L"Diagnostic directory: "<<dir.wstring()<<L'\n';return result;
 }
