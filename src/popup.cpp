@@ -20,12 +20,12 @@ LRESULT CALLBACK searchProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR
  auto* app=reinterpret_cast<App*>(value);
  if(msg==WM_GETDLGCODE){auto result=DefSubclassProc(h,msg,w,l);if(l){auto* m=reinterpret_cast<MSG*>(l);if(m->wParam==VK_RETURN||m->wParam==VK_ESCAPE||m->wParam==VK_UP||m->wParam==VK_DOWN)return result|DLGC_WANTALLKEYS;}return result;}
  if(msg==WM_KEYDOWN){
- if(w==VK_ESCAPE){app->hidePopup();return 0;}if(w==VK_RETURN){executeSelected(*app);return 0;}
+ if(w==VK_ESCAPE){app->hidePopup();return 0;}if(w==VK_RETURN){if(app->workflowsVisible){SetFocus(app->workflowTree);auto item=TreeView_GetSelection(app->workflowTree);if(item)TreeView_Expand(app->workflowTree,item,TVE_TOGGLE);}else executeSelected(*app);return 0;}
  if(w==VK_OEM_COMMA&&(GetKeyState(VK_CONTROL)&0x8000)){app->openEditor();return 0;}
- if(w==VK_UP||w==VK_DOWN){auto count=SendMessageW(app->rows,LB_GETCOUNT,0,0);auto selected=SendMessageW(app->rows,LB_GETCURSEL,0,0);if(count>0){selected=selected==LB_ERR?0:(std::clamp)(selected+(w==VK_DOWN?1:-1),LRESULT(0),count-1);SendMessageW(app->rows,LB_SETCURSEL,selected,0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);InvalidateRect(app->rows,nullptr,FALSE);}return 0;}
+ if(w==VK_UP||w==VK_DOWN){if(app->workflowsVisible){SetFocus(app->workflowTree);SendMessageW(app->workflowTree,msg,w,l);return 0;}auto count=SendMessageW(app->rows,LB_GETCOUNT,0,0);auto selected=SendMessageW(app->rows,LB_GETCURSEL,0,0);if(count>0){selected=selected==LB_ERR?0:(std::clamp)(selected+(w==VK_DOWN?1:-1),LRESULT(0),count-1);SendMessageW(app->rows,LB_SETCURSEL,selected,0);EnableWindow(GetDlgItem(app->popup,CmdExecute),TRUE);InvalidateRect(app->rows,nullptr,FALSE);}return 0;}
  }
  if(msg==WM_CHAR&&(w==VK_RETURN||w==VK_ESCAPE))return 0;
- if(msg==WM_PAINT){auto result=DefSubclassProc(h,msg,w,l);if(GetWindowTextLengthW(h)==0){HDC dc=GetDC(h);RECT r;GetClientRect(h,&r);r.left+=8;auto old=SelectObject(dc,app->bold);paintText(dc,L"Search shortcuts...",r,app->theme.colors.muted);SelectObject(dc,old);ReleaseDC(h,dc);}return result;}
+ if(msg==WM_PAINT){auto result=DefSubclassProc(h,msg,w,l);if(GetWindowTextLengthW(h)==0){HDC dc=GetDC(h);RECT r;GetClientRect(h,&r);r.left+=8;auto old=SelectObject(dc,app->bold);paintText(dc,app->workflowsVisible?L"Search workflows...":L"Search shortcuts...",r,app->theme.colors.muted);SelectObject(dc,old);ReleaseDC(h,dc);}return result;}
  return DefSubclassProc(h,msg,w,l);
 }
 LRESULT CALLBACK executeProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
@@ -45,7 +45,7 @@ void App::createPopup(){
  control(popup,L"BUTTON",L"Manage shortcuts",BS_PUSHBUTTON|WS_TABSTOP,CmdManage);
  auto executeButton=control(popup,L"BUTTON",L"Execute",BS_PUSHBUTTON|WS_TABSTOP,CmdExecute);SetWindowSubclass(executeButton,executeProc,3,reinterpret_cast<DWORD_PTR>(this));
  control(popup,L"BUTTON",L"Esc",BS_PUSHBUTTON|WS_TABSTOP,CmdExit);
- footer=control(popup,L"STATIC",L"",SS_LEFT,4);theme.style(popup);
+ footer=control(popup,L"STATIC",L"",SS_LEFT,4);createWorkflowPopup();theme.style(popup);
 }
 void App::layoutPopup(){
  if(!popup)return;UINT dpi=GetDpiForWindow(popup);RECT r;GetClientRect(popup,&r);int width=MulDiv(r.right,96,dpi),height=MulDiv(r.bottom,96,dpi);
@@ -58,6 +58,7 @@ void App::layoutPopup(){
  bounds(GetDlgItem(popup,CmdExit),16,height-44,46,30,dpi);bounds(footer,76,height-38,width-360,24,dpi);
  bounds(GetDlgItem(popup,CmdManage),width-280,height-44,148,30,dpi);bounds(GetDlgItem(popup,CmdExecute),width-120,height-44,104,30,dpi);
  for(size_t i=0;i<visibleRows.size();++i)SendMessageW(rows,LB_SETITEMHEIGHT,i,MulDiv(groupStart(*this,i)?68:44,dpi,96));
+ layoutWorkflowPopup();
  InvalidateRect(popup,nullptr,TRUE);
 }
 void App::refreshPopup(bool clearSearch){
@@ -71,7 +72,7 @@ void App::refreshPopup(bool clearSearch){
  SetWindowTextW(empty,query.empty()?L"No shortcuts for this application yet.\n\nOpen Manage shortcuts to add your first one.":L"No matching shortcuts.\n\nTry another description, category or key combination.");
  if(!visibleRows.empty())SendMessageW(rows,LB_SETCURSEL,0,0);EnableWindow(GetDlgItem(popup,CmdExecute),!visibleRows.empty());
  SendMessageW(rows,WM_SETREDRAW,TRUE,0);SetWindowTextW(footer,(std::to_wstring(visibleRows.size())+(visibleRows.size()==1?L" shortcut":L" shortcuts")+L"  ·  Quick Cheat").c_str());
- updatingPopup=false;layoutPopup();
+ refreshWorkflowPopup();updatingPopup=false;layoutPopup();
 }
 void App::drawRow(DRAWITEMSTRUCT* item){
  if(item->itemID==static_cast<UINT>(-1))return;auto* profile=currentProfile();if(!profile||item->itemID>=visibleRows.size())return;
@@ -101,10 +102,12 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);app->layoutPopup();return 0;}
  case WM_MEASUREITEM:{auto* measure=reinterpret_cast<MEASUREITEMSTRUCT*>(l);measure->itemHeight=MulDiv(groupStart(*app,measure->itemID)?68:44,GetDpiForWindow(h),96);return TRUE;}
  case WM_DRAWITEM:{auto* item=reinterpret_cast<DRAWITEMSTRUCT*>(l);if(item->CtlID==2)app->drawRow(item);else app->theme.drawControl(item);return TRUE;}
+ case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(l)->hwndFrom==app->workflowTree&&reinterpret_cast<NMHDR*>(l)->code==TVN_SELCHANGEDW)app->selectWorkflowStep();return 0;
  case ExecuteRow:app->execute(static_cast<size_t>(w));return 0;
  case WM_COMMAND:
  if(LOWORD(w)==Search&&HIWORD(w)==EN_CHANGE)app->refreshPopup();
- else if(LOWORD(w)==CmdManage||LOWORD(w)==CmdNew)app->openEditor();
+ else if(LOWORD(w)==CmdShortcuts||LOWORD(w)==CmdWorkflows){app->workflowsVisible=LOWORD(w)==CmdWorkflows;app->refreshPopup(true);SetFocus(app->search);}
+ else if(LOWORD(w)==CmdManage||LOWORD(w)==CmdNew){bool workflows=app->workflowsVisible;auto key=app->target.executable;app->openEditor();if(workflows)app->openWorkflowEditor(key);}
  else if(LOWORD(w)==CmdExit||LOWORD(w)==IDCANCEL)app->hidePopup();
  else if(LOWORD(w)==CmdExecute){int selected=static_cast<int>(SendMessageW(app->rows,LB_GETCURSEL,0,0));bool valid=selected>=0&&selected==app->pressedRow&&app->pressedWindow==app->target.window&&app->pressedProcess==app->target.process;app->pressedRow=-1;if(valid)app->execute(static_cast<size_t>(selected));}
  return 0;

@@ -51,7 +51,19 @@ For separate demo or portable data, launch `QuickCheat.exe --data-dir <directory
 
 Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline; compatibility has not been verified on every Windows version or monitor setup. Elevated or protected applications may block shortcut execution. Profiles are matched by executable filename, so apps with the same filename share a profile.
 
-Each shortcut contains one key combination. Workflows, docks, community sharing, an installer and automatic updates are planned for later consideration.
+Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
+
+## Workflows — 0.2.0-alpha.1 candidate
+
+The development build adds local step-by-step guides for each application. In the shortcut library, choose an application and click **Manage workflows**. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
+
+![Expandable workflow guides in the popup](docs/images/workflow-popup-dark.png)
+
+Applications with saved workflows show **Shortcuts / Workflows** tabs in the popup. Expand a guide and select a step to read its full text. Search filters workflow titles. These are reference guides; they do not execute commands.
+
+![Local workflow editor](docs/images/workflow-editor-dark.png)
+
+This candidate is awaiting manual acceptance and is not the published download above. It reads existing v1/v2 data and writes v3 on the next save. Before upgrading an existing file, it preserves `shortcuts.qc.pre-v3.bak`, in addition to the normal previous-save backup. Older releases cannot read v3: to roll back, exit the app, keep a copy of the v3 file and restore the pre-v3 backup as `shortcuts.qc`. Workflows created in v3 are not available in older versions.
 
 ## Build from source
 

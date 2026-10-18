@@ -7,7 +7,8 @@ namespace qc {
 inline constexpr size_t maxStoreBytes=8*1024*1024;
 struct Chord { UINT modifiers{}; WORD key{}; };
 struct Shortcut { std::wstring title, category; Chord chord; };
-struct Profile { std::wstring executable, name; std::vector<Shortcut> shortcuts; };
+struct Workflow { std::wstring title; std::vector<std::wstring> steps; };
+struct Profile { std::wstring executable, name; std::vector<Shortcut> shortcuts; std::vector<Workflow> workflows; };
 enum class ThemeMode : UINT { System, Light, Dark };
 struct Store { std::vector<Profile> profiles; Chord trigger{MOD_CONTROL | MOD_ALT, VK_SPACE}; ThemeMode theme{ThemeMode::System}; };
 bool matchesShortcut(const Shortcut& shortcut,const std::wstring& query);

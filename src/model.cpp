@@ -71,37 +71,44 @@ bool matchesShortcut(const Shortcut& shortcut,const std::wstring& query) {
 }
 bool validStore(const Store& s) {
  if(static_cast<UINT>(s.theme)>2||s.profiles.size()>256||!validChord(s.trigger)||!s.trigger.modifiers||s.trigger.key==VK_F12)return false;
- std::set<std::wstring> apps;size_t count=0;
+ std::set<std::wstring> apps;size_t count=0,workflowCount=0,stepCount=0;
  for(const auto& p:s.profiles) {
  if(p.executable.empty()||p.executable.size()>260||appKey(p.executable)!=p.executable||!p.executable.ends_with(L".exe")||!apps.insert(p.executable).second||trim(p.name).empty()||p.name.size()>120||p.shortcuts.size()>2048)return false;
  for(const auto& k:p.shortcuts)if(trim(k.title).empty()||k.title.size()>240||k.category.size()>80||!validChord(k.chord)||++count>20000)return false;
+ if(p.workflows.size()>256)return false;
+ for(const auto& flow:p.workflows){if(trim(flow.title).empty()||flow.title.size()>240||flow.steps.empty()||flow.steps.size()>128||++workflowCount>4096)return false;for(const auto& step:flow.steps)if(trim(step).empty()||step.size()>4096||++stepCount>20000)return false;}
  }return true;
 }
 std::wstring serialize(const Store& s) {
- std::wostringstream out;out<<L"QC\t2\nH\t"<<s.trigger.modifiers<<L'\t'<<s.trigger.key<<L"\nT\t"<<static_cast<UINT>(s.theme)<<L'\n';
+ std::wostringstream out;out<<L"QC\t3\nH\t"<<s.trigger.modifiers<<L'\t'<<s.trigger.key<<L"\nT\t"<<static_cast<UINT>(s.theme)<<L'\n';
  for(const auto& p:s.profiles) {
  out<<L"P\t"<<escape(p.executable)<<L'\t'<<escape(p.name)<<L'\n';
  for(const auto& k:p.shortcuts)out<<L"S\t"<<escape(k.title)<<L'\t'<<escape(k.category)<<L'\t'<<k.chord.modifiers<<L'\t'<<k.chord.key<<L'\n';
+ for(const auto& flow:p.workflows){out<<L"W\t"<<escape(flow.title)<<L'\n';for(const auto& step:flow.steps)out<<L"D\t"<<escape(step)<<L'\n';out<<L"F\n";}
  out<<L"E\n";
  }out<<L"Z\n";return out.str();
 }
 bool deserialize(const std::wstring& data,Store& target) {
  // Valid UTF-8 never decodes into more UTF-16 units than its byte count.
  if(data.size()>maxStoreBytes||data.find(L'\0')!=data.npos)return false;
- auto lines=split(data,L'\n');if(lines.size()<4||(lines[0]!=L"QC\t1"&&lines[0]!=L"QC\t2")||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
+ auto lines=split(data,L'\n');if(lines.size()<4||(lines[0]!=L"QC\t1"&&lines[0]!=L"QC\t2"&&lines[0]!=L"QC\t3")||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
  Store s;auto header=split(lines[1],L'\t');UINT key=0;
  if(header.size()!=3||header[0]!=L"H"||!number(header[1],s.trigger.modifiers)||!number(header[2],key))return false;s.trigger.key=static_cast<WORD>(key);
  size_t start=2;
- if(lines[0]==L"QC\t2"){auto theme=split(lines[2],L'\t');UINT mode=0;if(theme.size()!=2||theme[0]!=L"T"||!number(theme[1],mode)||mode>2)return false;s.theme=static_cast<ThemeMode>(mode);start=3;}
- bool inProfile=false;
+ if(lines[0]!=L"QC\t1"){auto theme=split(lines[2],L'\t');UINT mode=0;if(theme.size()!=2||theme[0]!=L"T"||!number(theme[1],mode)||mode>2)return false;s.theme=static_cast<ThemeMode>(mode);start=3;}
+ bool inProfile=false,inWorkflow=false;
  for(size_t i=start;i+2<lines.size();++i) {
  auto row=split(lines[i],L'\t');
  if(row[0]==L"P"&&row.size()==3&&!inProfile) {
  Profile p;if(!unescape(row[1],p.executable)||!unescape(row[2],p.name))return false;s.profiles.push_back(std::move(p));inProfile=true;
- }else if(row[0]==L"S"&&row.size()==5&&inProfile) {
+ }else if(row[0]==L"S"&&row.size()==5&&inProfile&&!inWorkflow) {
  Shortcut k;if(!unescape(row[1],k.title)||!unescape(row[2],k.category)||!number(row[3],k.chord.modifiers)||!number(row[4],key))return false;
  k.chord.key=static_cast<WORD>(key);s.profiles.back().shortcuts.push_back(std::move(k));
- }else if(row[0]==L"E"&&row.size()==1&&inProfile)inProfile=false;else return false;
- }if(inProfile||!validStore(s))return false;target=std::move(s);return true;
+ }else if(row[0]==L"W"&&row.size()==2&&inProfile&&!inWorkflow&&lines[0]==L"QC\t3"){
+ Workflow flow;if(!unescape(row[1],flow.title)||s.profiles.back().workflows.size()>=256)return false;s.profiles.back().workflows.push_back(std::move(flow));inWorkflow=true;
+ }else if(row[0]==L"D"&&row.size()==2&&inWorkflow){std::wstring step;if(!unescape(row[1],step)||s.profiles.back().workflows.back().steps.size()>=128)return false;s.profiles.back().workflows.back().steps.push_back(std::move(step));
+ }else if(row[0]==L"F"&&row.size()==1&&inWorkflow)inWorkflow=false;
+ else if(row[0]==L"E"&&row.size()==1&&inProfile&&!inWorkflow)inProfile=false;else return false;
+ }if(inProfile||inWorkflow||!validStore(s))return false;target=std::move(s);return true;
 }
 }
