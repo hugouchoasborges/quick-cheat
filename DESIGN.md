@@ -36,3 +36,6 @@ One Settings window uses themed native General / Shortcuts / Workflows navigatio
 
 ## Complete workflow reading
 Selecting a workflow tree parent renders its title and all numbered steps, separated by compact horizontal rules; a child selection remains focused on that step. Parse each step independently into the same Rich Edit control, preserving Markdown boundaries, link offsets, palette, resize cache and scrolling. The text limit accommodates 128 stored steps. Keep eight attached-image previews per reader for bounded memory, with an explicit placeholder directing users to a step for further images. Clear all rendered content on hide/tab switch. Storage and editing remain unchanged.
+
+## Portable collection actions
+Shortcuts and Workflows share native Import/Export buttons beside the application selector. Import previews identity and counts with Add, Replace and Cancel; replacement requires confirmation. Export requires saved edits and is available only for a profile containing shortcuts or workflows. Native dialogs follow Windows appearance.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-alpha.1 — 2026-10-18
+
+Candidate: portable per-application collections. Import/export actions in Shortcuts and Workflows transfer saved shortcuts, workflow Markdown and referenced PNG images in a versioned JSON file. Import previews application identity and counts; Add skips exact duplicates, while Replace changes only the matching application after confirmation. Global settings and other applications are preserved.
+
+Parsing and asset sizes are bounded. Unsafe paths, missing or invalid images and conflicting existing attachments abort import; newly created images roll back on failure. Export uses a flushed temporary file and atomic replacement. Native Windows JSON/Base64 APIs add no third-party dependency or idle work. Local store schema remains v3. Release compilation, independent code review and isolated demo captures/export completed; no tests added or run. Manual acceptance pending.
+
+
 ## 0.2.0-alpha.8 — 2026-10-18
 
 Public prerelease, manually accepted by Hugo on 2026-10-18. Includes the local workflow, Markdown/image, PIN, collapsible-category and tabbed-settings improvements from the earlier 0.2 candidates below. README and screenshots refreshed using isolated demo data. Windows x64 ZIP includes the executable, documentation and third-party license notices, with SHA-256 checksums.

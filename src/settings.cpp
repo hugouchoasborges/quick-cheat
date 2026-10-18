@@ -5,12 +5,17 @@
 #include <initializer_list>
 namespace qc {
 using namespace settings;
+bool Editor::pendingPageEdits() const{
+ if(page==2)return app.workflowEditor&&(app.workflowEditor->dirty||app.workflowEditor->pendingStep);
+ if(page==0)return textOf(trigger)!=formatChord(draft.trigger);
+ auto description=textOf(title),group=textOf(category),combination=textOf(keys);
+ if(profileIndex>=0&&shortcutIndex>=0&&shortcutIndex<static_cast<int>(draft.profiles[profileIndex].shortcuts.size())){const auto& saved=draft.profiles[profileIndex].shortcuts[shortcutIndex];return description!=saved.title||group!=saved.category||combination!=formatChord(saved.chord);}
+ return !description.empty()||!combination.empty();
+}
 bool Editor::leavePage(){
  if(page==2&&app.workflowEditor&&(app.workflowEditor->dirty||app.workflowEditor->pendingStep)){if(!app.workflowEditor->discard())return false;app.workflowEditor->loadFlow(app.workflowEditor->flowIndex);}
- if(page==1){bool changed=false;auto description=textOf(title),group=textOf(category),combination=textOf(keys);
-  if(profileIndex>=0&&shortcutIndex>=0&&shortcutIndex<static_cast<int>(draft.profiles[profileIndex].shortcuts.size())){const auto& saved=draft.profiles[profileIndex].shortcuts[shortcutIndex];changed=description!=saved.title||group!=saved.category||combination!=formatChord(saved.chord);}
-  else changed=!description.empty()||!combination.empty();
-  if(changed&&MessageBoxW(window,L"Discard unsaved shortcut changes?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return false;clearFields();
+ if(page==1){
+  if(pendingPageEdits()&&MessageBoxW(window,L"Discard unsaved shortcut changes?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return false;clearFields();
  }
  if(page==0&&textOf(trigger)!=formatChord(draft.trigger)){if(MessageBoxW(window,L"Discard changes to the activation shortcut?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return false;SetWindowTextW(trigger,formatChord(draft.trigger).c_str());}
  return true;
@@ -44,17 +49,18 @@ void Editor::layout(){
  if(font)DeleteObject(font);if(headingFont)DeleteObject(headingFont);if(captionFont)DeleteObject(captionFont);font=next;headingFont=nextHeading;captionFont=nextCaption;
  auto place=[&](int id,int x,int y,int w,int h){bounds(GetDlgItem(window,id),x,y,w,h,dpi);};auto visible=[&](int id,bool show){ShowWindow(GetDlgItem(window,id),show?SW_SHOWNA:SW_HIDE);};
  for(int id:std::initializer_list<int>{LabelTheme,ThemeSelect,LabelTrigger,Trigger,Apply,ThemeHelp,TriggerHelp,DataLabel,DataPath,DataHelp,OpenData})visible(id,page==0);
- for(int id:std::initializer_list<int>{LabelApp,Profiles,Browse})visible(id,page!=0);
+ for(int id:std::initializer_list<int>{LabelApp,Profiles,Browse,ImportCollection,ExportCollection})visible(id,page!=0);
  for(int id:std::initializer_list<int>{Entries,FormTitle,LabelTitle,Title,LabelCategory,Category,LabelKeys,Keys,Record,Save,New,Delete,RemoveProfile})visible(id,page==1);
  visible(CmdManageWorkflows,false);visible(Status,page!=2);visible(EmptyFlows,page==2&&profileIndex<0);
  SetWindowTextW(GetDlgItem(window,PageSubtitle),page==0?L"Make Quick Cheat feel at home.":page==1?L"Organize the keyboard shortcuts you use in each application.":L"Build reusable step-by-step reference guides for each application.");
  for(int id:std::initializer_list<int>{Title,Category,Keys,Record,Save,New,Delete,RemoveProfile})EnableWindow(GetDlgItem(window,id),profileIndex>=0);
+ updateCollectionActions();
  place(PageTitle,28,22,width-56,36);place(PageSubtitle,30,65,width-60,22);
  for(int i=0;i<3;++i){auto tab=GetDlgItem(window,TabGeneral+i);SetPropW(tab,L"QcSelected",reinterpret_cast<HANDLE>(page==i));place(TabGeneral+i,28+i*144,108,136,34);}
  place(LabelTheme,40,190,280,22);place(ThemeHelp,40,218,360,36);place(ThemeSelect,480,194,220,180);
  place(LabelTrigger,40,296,320,22);place(TriggerHelp,40,324,360,40);place(Trigger,484,300,204,28);place(Apply,704,296,92,36);
  place(DataLabel,40,408,280,22);place(DataPath,40,438,width-300,28);place(DataHelp,40,476,width-80,36);place(OpenData,width-220,430,176,36);
- place(LabelApp,28,178,200,20);place(Profiles,28,204,width-260,300);place(Browse,width-208,200,180,34);
+ place(LabelApp,28,178,200,20);place(Profiles,28,204,width-576,300);place(Browse,width-520,200,160,34);place(ImportCollection,width-352,200,160,34);place(ExportCollection,width-184,200,156,34);
  int left=width-420,right=width-348,fieldWidth=320;
  place(Entries,28,278,left,height-376);place(FormTitle,right,272,fieldWidth,26);
  place(LabelTitle,right,316,fieldWidth,20);place(Title,right+4,344,fieldWidth-8,28);
@@ -75,3 +81,5 @@ void Editor::paint(){
  EndPaint(window,&ps);
 }
 }
+
+void qc::Editor::updateCollectionActions(){bool available=profileIndex>=0&&static_cast<size_t>(profileIndex)<draft.profiles.size()&&(!draft.profiles[profileIndex].shortcuts.empty()||!draft.profiles[profileIndex].workflows.empty());if(window)EnableWindow(GetDlgItem(window,settings::ExportCollection),available);}
