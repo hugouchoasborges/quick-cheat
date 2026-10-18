@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include <shellapi.h>
 #include <objbase.h>
+#include <roapi.h>
 #include <new>
 namespace qc {
 namespace {
@@ -11,6 +12,7 @@ void CALLBACK foregroundEvent(HWINEVENTHOOK,DWORD,HWND window,LONG object,LONG,D
 }
 App::App()=default;
 App::~App() {
+ theme.stop();
  if(foregroundHook)UnhookWinEvent(foregroundHook);
  if(host){UnregisterHotKey(host,hotkeyId);NOTIFYICONDATAW n{sizeof(n)};n.hWnd=host;n.uID=1;Shell_NotifyIconW(NIM_DELETE,&n);}
  editor.reset();if(popup)DestroyWindow(popup);if(host)DestroyWindow(host);
@@ -25,6 +27,7 @@ bool App::start(HINSTANCE value) {
  WNDCLASSW cls{};cls.hInstance=instance;cls.lpfnWndProc=hostProc;cls.lpszClassName=L"QuickCheatHost";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);RegisterClassW(&cls);
  host=CreateWindowExW(WS_EX_TOOLWINDOW,cls.lpszClassName,L"Quick Cheat",WS_OVERLAPPED,0,0,0,0,nullptr,nullptr,instance,this);if(!host)return false;
  taskbarCreated=RegisterWindowMessageW(L"TaskbarCreated");
+ theme.observe(host);applyTheme();
  bool registered=RegisterHotKey(host,hotkeyId,store.trigger.modifiers|MOD_NOREPEAT,store.trigger.key)!=FALSE;
  bool fallback=false;
  if(!registered&&GetFileAttributesW(file.c_str())==INVALID_FILE_ATTRIBUTES){
@@ -54,19 +57,21 @@ void App::onForeground(HWND window) {
  // Events may already be stale by the time our message queue receives them.
  if(window!=GetForegroundWindow())return;
  DWORD pid=0;GetWindowThreadProcessId(window,&pid);if(pid==GetCurrentProcessId())return;
- auto next=identify(window);target=std::move(next);if(popup&&IsWindowVisible(popup))refreshPopup();
+ auto next=identify(window);target=std::move(next);if(popup&&IsWindowVisible(popup))refreshPopup(true);
 }
 Profile* App::currentProfile() { for(auto& p:store.profiles)if(p.executable==target.executable)return &p;return nullptr; }
 void App::togglePopup() {
- if(popup&&IsWindowVisible(popup)){ShowWindow(popup,SW_HIDE);return;}
+ if(popup&&IsWindowVisible(popup)){hidePopup();return;}
  onForeground(GetForegroundWindow());if(!targetAlive(target)){error(L"Activate an application window first, then press the activation shortcut.");return;}
- if(!popup)createPopup();refreshPopup();
+ if(!popup)createPopup();refreshPopup(true);
  MONITORINFO info{sizeof(info)};GetMonitorInfoW(MonitorFromWindow(target.window,MONITOR_DEFAULTTONEAREST),&info);
- UINT dpi=GetDpiForWindow(target.window);int width=MulDiv(600,dpi,96),height=MulDiv(480,dpi,96);
+ UINT dpi=GetDpiForWindow(target.window);int width=MulDiv(740,dpi,96),height=MulDiv(480,dpi,96);
  width=(std::min)(width,static_cast<int>(info.rcWork.right-info.rcWork.left));height=(std::min)(height,static_cast<int>(info.rcWork.bottom-info.rcWork.top));
  SetWindowPos(popup,HWND_TOPMOST,info.rcWork.right-width-((info.rcWork.right-info.rcWork.left-width)/2),info.rcWork.top+((info.rcWork.bottom-info.rcWork.top-height)/2),width,height,SWP_NOACTIVATE|SWP_SHOWWINDOW);
- layoutPopup();
+ layoutPopup();SetForegroundWindow(popup);SetFocus(search);
 }
+void App::hidePopup(bool restore){if(!popup)return;bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
+void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);if(editor)theme.style(editor->window);}
 void App::execute(size_t index) {
  // Re-read actual foreground before consulting a potentially stale event.
  HWND foreground=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(foreground,&pid);
@@ -74,15 +79,15 @@ void App::execute(size_t index) {
  auto* p=currentProfile();if(!p||index>=visibleRows.size()||visibleRows[index]>=p->shortcuts.size())return;
  auto chord=p->shortcuts[visibleRows[index]].chord;
  if(chord.key==store.trigger.key&&chord.modifiers==store.trigger.modifiers){error(L"This shortcut is also the Quick Cheat activation shortcut. Change the activation shortcut before running it.");return;}
- std::wstring message;if(!sendChord(target,chord,message))error(message);else ShowWindow(popup,SW_HIDE);
+ std::wstring message;if(!sendChord(target,chord,message))error(message);else hidePopup(false);
 }
 bool App::commit(Store candidate) {
  bool changed=candidate.trigger.key!=store.trigger.key||candidate.trigger.modifiers!=store.trigger.modifiers;int next=hotkeyId==1?2:1;
  if(changed&&!RegisterHotKey(host,next,candidate.trigger.modifiers|MOD_NOREPEAT,candidate.trigger.key)){error(L"That activation shortcut is unavailable. Choose another combination.",editor?editor->window:host);return false;}
  std::wstring message;if(!saveStore(file,candidate,message)){if(changed)UnregisterHotKey(host,next);error(message,editor?editor->window:host);return false;}
- if(changed){UnregisterHotKey(host,hotkeyId);hotkeyId=next;}store=std::move(candidate);if(popup)refreshPopup();return true;
+ if(changed){UnregisterHotKey(host,hotkeyId);hotkeyId=next;}bool appearanceChanged=candidate.theme!=store.theme;store=std::move(candidate);if(appearanceChanged)applyTheme();if(popup)refreshPopup();return true;
 }
-void App::openEditor() { if(popup)ShowWindow(popup,SW_HIDE);if(!editor)editor=std::make_unique<Editor>(*this);editor->show(); }
+void App::openEditor() { hidePopup(false);if(!editor)editor=std::make_unique<Editor>(*this);editor->show(); }
 LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  auto* app=reinterpret_cast<App*>(GetWindowLongPtrW(h,GWLP_USERDATA));
  if(msg==WM_NCCREATE){app=static_cast<App*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(app));}
@@ -91,6 +96,7 @@ LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  switch(msg) {
  case WM_HOTKEY:app->togglePopup();return 0;
  case ForegroundChanged:app->onForeground(reinterpret_cast<HWND>(l));return 0;
+ case ThemeChanged:case WM_SETTINGCHANGE:case WM_SYSCOLORCHANGE:app->applyTheme();return 0;
  case TrayMessage:if(l==WM_RBUTTONUP||l==WM_CONTEXTMENU)app->trayMenu();else if(l==WM_LBUTTONDBLCLK)app->openEditor();return 0;
  case WM_COMMAND:switch(LOWORD(w)){case CmdOpen:app->togglePopup();break;case CmdManage:app->openEditor();break;
  case CmdData:ShellExecuteW(h,L"open",app->file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;case CmdExit:PostQuitMessage(0);break;}return 0;
@@ -101,14 +107,15 @@ LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  HANDLE singleton=CreateMutexW(nullptr,FALSE,L"Local\\QuickCheat.Desktop");if(!singleton)return 1;
  if(GetLastError()==ERROR_ALREADY_EXISTS){MessageBoxW(nullptr,L"Quick Cheat is already running in the system tray.",L"Quick Cheat",MB_OK);CloseHandle(singleton);return 0;}
- INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_LISTVIEW_CLASSES};InitCommonControlsEx(&controls);CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+ INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_LISTVIEW_CLASSES};InitCommonControlsEx(&controls);HRESULT apartment=RoInitialize(RO_INIT_SINGLETHREADED);
  int result=0;
  try { qc::App app;int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);
  if(argv){if(argc==3&&wcscmp(argv[1],L"--data-dir")==0)app.file=std::filesystem::path(argv[2])/L"shortcuts.qc";LocalFree(argv);}
  if(!app.start(instance))result=1;else {MSG message{};BOOL status=0;while((status=GetMessageW(&message,nullptr,0,0))>0) {
  if(app.editor&&app.editor->window&&IsWindowVisible(app.editor->window)&&IsDialogMessageW(app.editor->window,&message))continue;
+ if(app.popup&&IsWindowVisible(app.popup)&&GetForegroundWindow()==app.popup&&IsDialogMessageW(app.popup,&message))continue;
  TranslateMessage(&message);DispatchMessageW(&message);
  }if(status<0)result=1;}}
  catch(const std::exception&){MessageBoxW(nullptr,L"Quick Cheat could not continue. Saved shortcuts were not changed.",L"Quick Cheat",MB_OK|MB_ICONERROR);result=1;}
- CoUninitialize();CloseHandle(singleton);return result;
+ if(SUCCEEDED(apartment))RoUninitialize();CloseHandle(singleton);return result;
 }

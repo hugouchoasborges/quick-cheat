@@ -1,6 +1,7 @@
 # Quick Cheat
 
 C++20, Win32, native Windows controls. Prioritize stability, performance and minimal memory. UI and code are English. MIT license.
+Raycast is the approved visual reference for popup and editor/settings. Support System, Light and Dark through documented Windows APIs. Clicking a shortcut row only selects; use explicit Execute or the deliberate keyboard action. Keep external target identity while popup search has focus. PRODUCT.md and DESIGN.md record this scope and visual system.
 Gitflow: main contains delivered releases, develop integrates work, feature/* branches hold implementation, release/* prepare releases and hotfix/* fix delivered releases.
 For every implemented version, create a child page under Apps > Quick Cheat in Hugo Library with decisions, changes, validation and limitations.
 Do not add frameworks, polling loops, online dependencies or cross-platform abstractions without a demonstrated need.
