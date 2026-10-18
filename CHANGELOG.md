@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-alpha.4 — 2026-10-18
+
+Workflow steps support rendered basic Markdown and local images. Native Rich Edit displays headings, emphasis, lists, checklists, quotes, code, links and attached images in the popup. The editor adds Attach image... for PNG/JPEG/BMP/GIF, storing normalized PNG copies in the local attachments folder. No browser runtime, remote-image downloads or HTML execution. Text storage remains schema v3; full backups must include attachments.
+
+MD4C v0.6.0 is pinned and distributed under MIT. Image import/rendering has size and count limits; unused attachments are retained. Isolated dark/light/editor captures and Release compilation completed; no tests added or run. Three local ChatGPT guides updated with Markdown and three original sample diagrams, preserving nine shortcuts and a pre-edit backup. Candidate awaiting manual acceptance.
+
 ## 0.2.0-alpha.3 — 2026-10-18
 
 Top-right PIN, off by default: focus loss hides the popup while the tray app keeps running. PIN on keeps it visible across focus loss, execution and activation hotkey; Escape or the adjacent Close button hides it. PIN state lasts for the session. Management windows stay usable above a pinned popup.

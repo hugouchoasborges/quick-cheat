@@ -22,3 +22,6 @@ Default popup: 1040x760 logical pixels, constrained to monitor work area. Native
 
 ## PIN and popup dismissal
 PIN is placed at the top right and defaults off at process startup. Unpinned focus loss hides only the popup; the tray process remains. Pinned popup stays visible across focus loss, execution and hotkey activation; Close is visible beside PIN only while pinned. Escape/Close hides it without clearing session PIN. Management windows are owned above the pinned popup.
+
+## Markdown and attached images
+Workflow step source remains editable Markdown text. A lazily created native Rich Edit reader renders basic formatting with the pinned MD4C parser, following the current palette and DPI. WIC normalizes attached images to managed local PNG files; only these relative references render. No browser engine, network image fetching or HTML execution. Clear rendered images on hide/tab switch and cache unchanged visible content; width changes use a one-shot resize debounce. Attach image... inserts a reference at the editor selection; Save workflow persists it. Unreferenced files are retained to preserve backup references.

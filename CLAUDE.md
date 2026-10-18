@@ -12,3 +12,5 @@ At task start: `node C:/Users/hugou/.claude/skills/hugo-library/scripts/harness.
 Product documentation: Apps > Quick Cheat, `tgslib://51be8b49abe30ba3`.
 
 Popup PIN defaults off and hides the popup on focus loss; PIN on keeps it open across focus loss/execution/hotkey and exposes Close beside PIN. Shortcut cards use native ListView tile view; retain category labels, single selection, intentional double-click/Execute/Enter and native keyboard access.
+
+Workflow Markdown uses pinned MD4C + lazy native Rich Edit, with WIC-managed local PNG attachments. Schema v3 stores Markdown references; preserve the attachments directory in backups. Never fetch remote images or execute HTML. Clear rendered assets on hide; retain unreferenced files for backup safety. Include MD4C MIT notice in binary packages.
