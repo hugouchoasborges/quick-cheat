@@ -35,7 +35,7 @@ LRESULT CALLBACK executeProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PT
 HFONT makeFont(UINT dpi,int size,int weight){return CreateFontW(-MulDiv(size,dpi,96),0,0,0,weight,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");}
 }
 void App::createPopup(){
- WNDCLASSW cls{};cls.hInstance=instance;cls.lpfnWndProc=popupProc;cls.lpszClassName=L"QuickCheatPopup";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);RegisterClassW(&cls);
+ WNDCLASSW cls{};cls.hInstance=instance;cls.lpfnWndProc=popupProc;cls.lpszClassName=L"QuickCheatPopup";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));RegisterClassW(&cls);
  popup=CreateWindowExW(WS_EX_TOOLWINDOW|WS_EX_TOPMOST|WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat",WS_POPUP|WS_BORDER,0,0,740,480,host,nullptr,instance,this);
  search=control(popup,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Search);SendMessageW(search,EM_SETLIMITTEXT,160,0);SetWindowSubclass(search,searchProc,1,reinterpret_cast<DWORD_PTR>(this));
  heading=control(popup,L"STATIC",L"",SS_RIGHT,1);

@@ -2,7 +2,7 @@
 
 A small Windows shortcut reference and launcher. C++20, Win32 and native Windows controls; no web runtime, background polling or network access.
 
-## Current candidate: 0.1.0-alpha.2
+## Current candidate: 0.1.0-alpha.3
 
 - Tray-resident app with a configurable global popup toggle (default **Ctrl+Alt+Space**).
 - If that default is occupied on first launch, tries **Ctrl+Alt+Shift+Space** and shows a notification. Existing configured conflicts are reported; use the tray menu to change activation.
@@ -10,6 +10,7 @@ A small Windows shortcut reference and launcher. C++20, Win32 and native Windows
 - Shared **System**, **Light** and **Dark** appearance across the popup and shortcut library, saved from the Appearance selector. System follows Windows app colors through documented UISettings events; High Contrast uses system colors.
 - Local editor: select the current app or browse to an executable, create/edit/delete shortcuts, record a combination or type it, and choose/type categories.
 - English UI, Unicode data, versioned UTF-8 storage, durable replacement and previous-save backup.
+- Original lavender keycap/Q icon embedded in the executable, tray and window classes, with ten sizes from 16 to 256px.
 
 ## Run
 
@@ -27,6 +28,7 @@ To recover, exit Quick Cheat, keep a copy of the damaged file and replace `short
 ## Build and verify
 
 Install Visual Studio 2022 **Desktop development with C++**, Windows SDK and CMake tools. Run `./scripts/build.ps1` in PowerShell. The script builds Windows x64 Release with a static C++ runtime, then runs the core tests. Output: `build/Release/QuickCheat.exe`. The executable needs no separately installed .NET or VC++ runtime.
+Run `./scripts/create-desktop-shortcut.ps1` after building to create **Quick Cheat** on the Windows desktop. It points directly at `build/Release/QuickCheat.exe`, so subsequent builds use the same shortcut; its icon also comes from the executable. Unrelated existing shortcuts are preserved. `./scripts/generate-icon.ps1` reproduces the authored SVG, PNG preview and multi-size ICO in `assets/` using Windows System.Drawing; the app needs no asset files alongside its executable.
 For desktop integration checks, first exit Quick Cheat and run `build/Release/qc_integration.exe build/Release/QuickCheat.exe`. This opens controlled test windows using isolated temporary data and verifies native hotkey-message handling, editor persistence, popup focus, actual SendInput delivery, foreground switching and restart. It dispatches `WM_HOTKEY` directly; physical activation and conflicts with other software need manual verification. Do not interact with other windows during the check; Windows foreground restrictions can interrupt automation.
 `build/Release/qc_preview.exe build/Release/QuickCheat.exe` captures only the app's popup/editor into `build/qa` and samples idle resource usage. It uses separate sample data. The GitHub workflow builds and runs the headless core tests; interactive tests require a desktop session.
 

@@ -1,6 +1,7 @@
 # Quick Cheat visual direction
 
 Visual authority: Raycast screenshot supplied by Hugo; applies to popup and editor/settings. This is a Windows command palette, rendered with native controls and GDI. Existing product truth is preserved.
+Application mark: an original lavender keyboard key with a geometric Q on a charcoal rounded square. Authored SVG is in assets/quick-cheat.svg; generate-icon.ps1 creates its PNG and ten-size Windows ICO. The executable embeds the ICO so distribution and desktop shortcuts need no loose icon asset.
 
 - Compact charcoal or warm-white surfaces, thin separators, restrained rounded selections and keycaps. System defaults to Windows app color preference and updates through documented UISettings color-change events. Explicit Dark/Light remain pinned.
 - Search is the popup's first visual/focus anchor. The application name remains visible as context. Categories are quiet group headings; command descriptions and right-aligned keycaps form compact scan lines.

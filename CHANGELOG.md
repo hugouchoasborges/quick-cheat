@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-alpha.3 — 2026-10-18
+
+Added an original lavender keyboard-key/Q icon as embedded Windows resources for the executable, tray and window classes. Ten icon sizes from 16 to 256px, with reproducible SVG/PNG/ICO assets. Added a desktop-shortcut script pointing at the current development build and verified all embedded icon sizes. No shortcut execution or theme behavior changes.
+
 ## 0.1.0-alpha.2 — 2026-10-18
 
 Raycast-inspired popup and shortcut library; persistent System/Light/Dark themes; searchable categorized rows, keyboard navigation and keycaps. Clicking a row only selects; the explicit Execute button or Enter from search runs the shortcut. Popup search owns focus while retaining the external target, with focus restoration and stale-context guards. Schema v1 loads with System appearance; v2 persists the selected theme. Added theme/search/migration tests and selection-versus-execution integration coverage.
