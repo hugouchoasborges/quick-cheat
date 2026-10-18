@@ -23,3 +23,6 @@ No tests added or run. Compilation, independent inspection and demo captures are
 Release build with SkipTests succeeded. Independent review found the hidden-draft exit guard still depended on child visibility; changed to settingsVisible, and the reviewer confirmed the correction plus IDOK routing and keyboard focus reveal. Existing demo helper adapted for child panels and parent-window captures. Dark/light/system DEMO captures generated; dark popup, dark General/Workflows and light Shortcuts inspected. Manual acceptance remains pending.
 
 Library: [0.3.0-alpha.2](tgslib://37c03bacb1de3d45).
+
+## Manual acceptance and publication
+Hugo confirmed all implemented changes work on 2026-10-18 and authorized publication as v0.3.0-alpha.2. Earlier candidate/pending statements above describe the implementation checkpoint. This release includes both portable collections and inline settings. Automated tests were not added or run during release preparation.

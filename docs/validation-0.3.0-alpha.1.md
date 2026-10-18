@@ -25,3 +25,6 @@ The generated DEMO targets the controlled `qc_integration.exe` application, not 
 
 ## Library
 Version decisions and evidence: [0.3.0-alpha.1](tgslib://5e6d2d592646481a).
+
+## Manual acceptance and publication
+Hugo confirmed all implemented changes work on 2026-10-18 and authorized publication as v0.3.0-alpha.2. Earlier candidate/pending statements above describe the implementation checkpoint. This release includes both portable collections and inline settings. Automated tests were not added or run during release preparation.
