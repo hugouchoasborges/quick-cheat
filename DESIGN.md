@@ -13,3 +13,6 @@ Application mark: an original lavender keyboard key with a geometric Q on a char
 
 Dark tokens: background #1E1E1E, panel #252525, field #292929, selection #363636, border #444444, text #F4F4F4, secondary #B4B4B4, accent #CEB4FF.
 Light tokens: background #FAF9F7, panel #F1F0ED, field #FFFFFF, selection #E6E3ED, border #D4D0CC, text #222126, secondary #625F68, accent #6941A5.
+
+## Local workflows
+Native themed buttons switch Shortcuts/Workflows only for profiles with saved workflows. A native tree provides expand/collapse and step selection; a wrapping, scrollable read-only field exposes full step text. Execute is hidden and disabled in this view. A separate owned native editor provides title, workflow and step lists, multiline editing, ordered-step actions and explicit Save workflow. Unsaved changes require confirmation before closing or switching guides.

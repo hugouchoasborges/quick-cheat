@@ -41,6 +41,7 @@ void Editor::layout() {
  bounds(GetDlgItem(window,LabelKeys),right,340,fieldWidth,20,dpi);bounds(keys,right+4,374,fieldWidth-92,26,dpi);bounds(GetDlgItem(window,Record),right+fieldWidth-76,370,76,34,dpi);
  bounds(GetDlgItem(window,Save),right,424,fieldWidth,36,dpi);bounds(GetDlgItem(window,New),right,474,(fieldWidth-10)/2,32,dpi);bounds(GetDlgItem(window,Delete),right+(fieldWidth+10)/2,474,(fieldWidth-10)/2,32,dpi);
  bounds(GetDlgItem(window,RemoveProfile),24,height-116,176,30,dpi);
+ bounds(GetDlgItem(window,CmdManageWorkflows),216,height-116,176,30,dpi);
  bounds(GetDlgItem(window,LabelTrigger),24,height-74,160,20,dpi);bounds(trigger,194,height-78,208,26,dpi);bounds(GetDlgItem(window,Apply),418,height-82,90,34,dpi);
  bounds(status,24,height-34,width-48,22,dpi);
  ListView_SetColumnWidth(list,0,MulDiv(left*44/100,dpi,96));ListView_SetColumnWidth(list,1,MulDiv(left*26/100,dpi,96));ListView_SetColumnWidth(list,2,MulDiv(left*29/100,dpi,96));InvalidateRect(window,nullptr,TRUE);
@@ -82,7 +83,7 @@ void Editor::saveShortcut() {
  if(!persist()){draft=std::move(original);return;}refreshList();
 }
 void Editor::deleteShortcut(){if(profileIndex<0||shortcutIndex<0)return;if(MessageBoxW(window,L"Delete the selected shortcut?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;auto& s=draft.profiles[profileIndex].shortcuts;s.erase(s.begin()+shortcutIndex);if(!persist())draft=std::move(old);refreshList();}
-void Editor::deleteProfile(){if(profileIndex<0)return;if(MessageBoxW(window,L"Delete this application profile and all its shortcuts?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;draft.profiles.erase(draft.profiles.begin()+profileIndex);if(!persist())draft=std::move(old);profileIndex=-1;refreshProfiles();}
+void Editor::deleteProfile(){if(profileIndex<0)return;if(MessageBoxW(window,L"Delete this application profile, all its shortcuts and workflows?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;draft.profiles.erase(draft.profiles.begin()+profileIndex);if(!persist())draft=std::move(old);profileIndex=-1;refreshProfiles();}
 void Editor::applyTrigger(){auto chord=parseChord(textOf(trigger));if(!chord||!chord->modifiers||chord->key==VK_F12){app.error(L"Activation requires a modifier (Ctrl, Alt, Shift or Win) and a key other than F12.",window);return;}auto old=draft.trigger;draft.trigger=*chord;if(!persist())draft.trigger=old;SetWindowTextW(trigger,formatChord(draft.trigger).c_str());}
 void Editor::applyAppearance(){auto selected=SendMessageW(themeSelect,CB_GETCURSEL,0,0);if(selected<0||selected>2)return;auto old=draft.theme;draft.theme=static_cast<ThemeMode>(selected);if(!persist())draft.theme=old;SendMessageW(themeSelect,CB_SETCURSEL,static_cast<UINT>(draft.theme),0);}
 void Editor::paint(){PAINTSTRUCT ps;auto dc=BeginPaint(window,&ps);RECT r;GetClientRect(window,&r);FillRect(dc,&r,app.theme.background);UINT dpi=GetDpiForWindow(window);auto px=[&](int n){return MulDiv(n,dpi,96);};auto& c=app.theme.colors;
@@ -118,6 +119,7 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  control(h,L"STATIC",L"Category (choose or type)",0,LabelCategory);e->category=control(h,L"COMBOBOX",L"",CBS_DROPDOWN|CBS_AUTOHSCROLL|WS_VSCROLL|WS_TABSTOP,Category);SendMessageW(e->category,CB_LIMITTEXT,80,0);
  control(h,L"STATIC",L"Keyboard shortcut",0,LabelKeys);e->keys=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Keys);SendMessageW(e->keys,EM_SETLIMITTEXT,100,0);SetWindowSubclass(e->keys,captureProc,1,reinterpret_cast<DWORD_PTR>(e));control(h,L"BUTTON",L"Record",WS_TABSTOP,Record);
  control(h,L"BUTTON",L"Save shortcut",WS_TABSTOP|BS_DEFPUSHBUTTON,Save);control(h,L"BUTTON",L"New shortcut",WS_TABSTOP,New);control(h,L"BUTTON",L"Delete",WS_TABSTOP,Delete);control(h,L"BUTTON",L"Remove application",WS_TABSTOP,RemoveProfile);
+ control(h,L"BUTTON",L"Manage workflows",WS_TABSTOP,CmdManageWorkflows);
  control(h,L"STATIC",L"Activation shortcut",0,LabelTrigger);e->trigger=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Trigger);SendMessageW(e->trigger,EM_SETLIMITTEXT,100,0);control(h,L"BUTTON",L"Apply",WS_TABSTOP,Apply);
  e->status=control(h,L"STATIC",L"",0,Status);return 0;}
  case WM_SIZE:e->layout();return 0;
@@ -130,6 +132,7 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);e->layout();return 0;}
  case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(l)->idFrom==Entries&&reinterpret_cast<NMHDR*>(l)->code==LVN_ITEMCHANGED)e->loadSelection();return 0;
  case WM_COMMAND:switch(LOWORD(w)){
+ case CmdManageWorkflows:if(e->profileIndex>=0&&e->persist())e->app.openWorkflowEditor(e->draft.profiles[e->profileIndex].executable);else if(e->profileIndex<0)e->app.error(L"Choose an application first.",h);break;
  case ThemeSelect:if(HIWORD(w)==CBN_SELCHANGE&&!e->refreshing)e->applyAppearance();break;
  case Profiles:if(HIWORD(w)==CBN_SELCHANGE&&!e->refreshing){e->profileIndex=static_cast<int>(SendMessageW(e->profiles,CB_GETCURSEL,0,0));e->refreshList();}break;
  case Browse:e->addProfile();break;case Save:e->saveShortcut();break;case New:e->clearFields();SetFocus(e->title);break;case Delete:e->deleteShortcut();break;case RemoveProfile:e->deleteProfile();break;case Apply:e->applyTrigger();break;

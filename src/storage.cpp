@@ -5,6 +5,15 @@ namespace qc {
 namespace {
 struct Handle { HANDLE value{INVALID_HANDLE_VALUE}; ~Handle(){if(value!=INVALID_HANDLE_VALUE)CloseHandle(value);} };
 bool fail(std::wstring& error,const wchar_t* operation) { error=std::wstring(operation)+L" (Windows error "+std::to_wstring(GetLastError())+L").";return false; }
+bool preserveLegacy(const std::filesystem::path& file,std::wstring& error){
+ bool legacy=false;
+ {Handle h{CreateFileW(file.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr)};
+ if(h.value==INVALID_HANDLE_VALUE){if(GetLastError()==ERROR_FILE_NOT_FOUND||GetLastError()==ERROR_PATH_NOT_FOUND)return true;return fail(error,L"Cannot inspect data before migration");}
+ char header[5]{};DWORD read=0;if(!ReadFile(h.value,header,5,&read,nullptr))return fail(error,L"Cannot inspect data before migration");
+ legacy=read==5&&header[0]=='Q'&&header[1]=='C'&&header[2]=='\t'&&(header[3]=='1'||header[3]=='2')&&header[4]=='\n';}
+ if(legacy&&!CopyFileW(file.c_str(),(file.wstring()+L".pre-v3.bak").c_str(),TRUE)&&GetLastError()!=ERROR_FILE_EXISTS)return fail(error,L"Cannot preserve pre-migration backup");
+ return true;
+}
 }
 std::filesystem::path dataPath() {
  PWSTR folder=nullptr;
@@ -29,6 +38,7 @@ bool saveStore(const std::filesystem::path& file,const Store& store,std::wstring
  const auto text=serialize(store);int n=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text.data(),static_cast<int>(text.size()),nullptr,0,nullptr,nullptr);
  if(n<=0||static_cast<size_t>(n)>maxStoreBytes){error=L"Cannot encode shortcut data or the 8 MiB file size limit was exceeded.";return false;}
  std::string bytes(n,'\0');WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text.data(),static_cast<int>(text.size()),bytes.data(),n,nullptr,nullptr);
+ if(!preserveLegacy(file,error))return false;
  std::error_code ec;std::filesystem::create_directories(file.parent_path(),ec);if(ec){error=L"Cannot create the data directory.";return false;}
  const auto temp=file.wstring()+L".tmp."+std::to_wstring(GetCurrentProcessId());
  bool written=false;

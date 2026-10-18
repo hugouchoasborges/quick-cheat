@@ -52,7 +52,7 @@ LRESULT Theme::controlColor(UINT message,HDC dc,HWND widget){
 }
 bool Theme::drawControl(DRAWITEMSTRUCT* item){
  if(item->CtlType!=ODT_BUTTON)return false;auto dc=item->hDC;RECT r=item->rcItem;bool enabled=IsWindowEnabled(item->hwndItem)!=FALSE;
- bool primary=item->CtlID==105||item->CtlID==208;bool pressed=(item->itemState&ODS_SELECTED)!=0;bool hover=GetPropW(item->hwndItem,L"QcHover")!=nullptr;
+ bool primary=item->CtlID==105||item->CtlID==208||item->CtlID==405||GetPropW(item->hwndItem,L"QcSelected")!=nullptr;bool pressed=(item->itemState&ODS_SELECTED)!=0;bool hover=GetPropW(item->hwndItem,L"QcHover")!=nullptr;
  auto fill=primary&&enabled?colors.accent:pressed?colors.selection:hover?colors.selection:colors.panel;
  auto text=primary&&enabled?colors.accentText:enabled?colors.text:colors.muted;
  bool onPanel=item->CtlID==206||item->CtlID==207||item->CtlID==208||item->CtlID==209;

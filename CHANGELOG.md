@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-alpha.1 — 2026-10-18
+
+Local per-application workflows: title and ordered text steps; dedicated native editor with add/edit/delete/reorder and unsaved-change prompts. Applications with workflows show Shortcuts/Workflows tabs in the popup, with expandable guides, title search and a full-text step reader. Workflows do not execute commands. Shared System/Light/Dark themes and DPI-aware layout.
+
+Storage schema v3 reads v1/v2 and preserves a one-time shortcuts.qc.pre-v3.bak before migration, alongside the normal previous-save backup. Candidate awaiting manual acceptance; no public release yet.
+
 ## 0.1.0-alpha.4 — 2026-10-18
 
 Double-click a shortcut row to execute it. Single-click selection, Execute and Enter remain available. Local data format is unchanged.

@@ -27,6 +27,7 @@ int wmain(int argc,wchar_t** argv){
  auto appExe=std::filesystem::absolute(argv[1]);auto output=appExe.parent_path().parent_path()/L"qa";std::filesystem::create_directories(output);
  auto data=output/(L"preview-"+std::to_wstring(GetCurrentProcessId()));qc::Store s;s.trigger.modifiers=7;
  s.profiles.push_back({L"qc_integration.exe",L"Visual Studio Code (demo)",{{L"Save file",L"File",{MOD_CONTROL,'S'}},{L"Open file",L"File",{MOD_CONTROL,'O'}},{L"Find in file",L"Search",{MOD_CONTROL,'F'}},{L"Search across files",L"Search",{MOD_CONTROL|MOD_SHIFT,'F'}},{L"Command palette",L"Navigation",{MOD_CONTROL|MOD_SHIFT,'P'}},{L"Go to file",L"Navigation",{MOD_CONTROL,'P'}},{L"Toggle sidebar",L"View",{MOD_CONTROL,'B'}}}});
+ s.profiles.back().workflows={{L"Prepare a change for review",{L"Open the project folder and check the current branch.",L"Review the modified files in Source Control. Keep each change focused on one task.",L"Read the diff, write a clear commit message, and commit the change."}},{L"Find a symbol in the project",{L"Open the command palette.",L"Choose the symbol search command and type the name you want to find.",L"Select a result and review its surrounding code."}}};
  std::wstring error;if(!qc::saveStore(data/L"shortcuts.qc",s,error))throw std::runtime_error("Cannot save preview data");
  Child app,target;app.start(L"\""+appExe.wstring()+L"\" --data-dir \""+data.wstring()+L"\"");auto host=waitWindow(L"QuickCheatHost");pause(400);
  PROCESS_MEMORY_COUNTERS_EX memory{};memory.cb=sizeof(memory);GetProcessMemoryInfo(app.pi.hProcess,reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memory),sizeof(memory));
@@ -38,7 +39,9 @@ int wmain(int argc,wchar_t** argv){
  SendMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");
  SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);pause(120);
  auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
+ SendMessageW(editor,WM_COMMAND,108,0);auto workflows=waitWindow(L"QuickCheatWorkflows");pause(120);capture(workflows,output/(std::wstring(L"workflow-editor-")+name+L".bmp"));SendMessageW(workflows,WM_CLOSE,0,0);
  SendMessageW(host,WM_HOTKEY,1,0);auto popup=waitWindow(L"QuickCheatPopup");pause(120);capture(popup,output/(std::wstring(L"popup-")+name+L".bmp"));
+ SendMessageW(popup,WM_COMMAND,107,0);auto tree=GetDlgItem(popup,7);auto root=TreeView_GetRoot(tree);auto step=TreeView_GetChild(tree,root);TreeView_SelectItem(tree,step);pause(120);capture(popup,output/(std::wstring(L"workflow-popup-")+name+L".bmp"));SendMessageW(popup,WM_COMMAND,106,0);
  }
  PostMessageW(host,WM_COMMAND,103,0);WaitForSingleObject(app.pi.hProcess,3000);PostMessageW(targetWindow,WM_CLOSE,0,0);WaitForSingleObject(target.pi.hProcess,3000);
  std::wcout<<L"Screenshots: "<<output.wstring()<<L'\n';return 0;

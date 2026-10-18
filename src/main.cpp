@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "workflows.hpp"
 #include <shellapi.h>
 #include <objbase.h>
 #include <roapi.h>
@@ -15,7 +16,7 @@ App::~App() {
  theme.stop();
  if(foregroundHook)UnhookWinEvent(foregroundHook);
  if(host){UnregisterHotKey(host,hotkeyId);NOTIFYICONDATAW n{sizeof(n)};n.hWnd=host;n.uID=1;Shell_NotifyIconW(NIM_DELETE,&n);}
- editor.reset();if(popup)DestroyWindow(popup);if(host)DestroyWindow(host);
+ workflowEditor.reset();editor.reset();if(popup)DestroyWindow(popup);if(host)DestroyWindow(host);
  if(font)DeleteObject(font);if(labelFont)DeleteObject(labelFont);if(bold)DeleteObject(bold);active=nullptr;
 }
 void App::error(const std::wstring& text,HWND owner) { MessageBoxW(owner?owner:host,text.c_str(),L"Quick Cheat",MB_OK|MB_ICONWARNING); }
@@ -71,8 +72,9 @@ void App::togglePopup() {
  layoutPopup();SetForegroundWindow(popup);SetFocus(search);
 }
 void App::hidePopup(bool restore){if(!popup)return;bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
-void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);if(editor)theme.style(editor->window);}
+void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);}
 void App::execute(size_t index) {
+ if(workflowsVisible)return;
  // Re-read actual foreground before consulting a potentially stale event.
  HWND foreground=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(foreground,&pid);
  if(pid!=GetCurrentProcessId()&&foreground!=target.window){onForeground(foreground);return;}
@@ -99,20 +101,21 @@ LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  case ThemeChanged:case WM_SETTINGCHANGE:case WM_SYSCOLORCHANGE:app->applyTheme();return 0;
  case TrayMessage:if(l==WM_RBUTTONUP||l==WM_CONTEXTMENU)app->trayMenu();else if(l==WM_LBUTTONDBLCLK)app->openEditor();return 0;
  case WM_COMMAND:switch(LOWORD(w)){case CmdOpen:app->togglePopup();break;case CmdManage:app->openEditor();break;
- case CmdData:ShellExecuteW(h,L"open",app->file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;case CmdExit:PostQuitMessage(0);break;}return 0;
- case WM_CLOSE:PostQuitMessage(0);return 0;
+ case CmdData:ShellExecuteW(h,L"open",app->file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;case CmdExit:if(app->workflowEditor&&IsWindowVisible(app->workflowEditor->window)&&!app->workflowEditor->discard())break;PostQuitMessage(0);break;}return 0;
+ case WM_CLOSE:if(!app->workflowEditor||!IsWindowVisible(app->workflowEditor->window)||app->workflowEditor->discard())PostQuitMessage(0);return 0;
  }return DefWindowProcW(h,msg,w,l);
 }
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  HANDLE singleton=CreateMutexW(nullptr,FALSE,L"Local\\QuickCheat.Desktop");if(!singleton)return 1;
  if(GetLastError()==ERROR_ALREADY_EXISTS){MessageBoxW(nullptr,L"Quick Cheat is already running in the system tray.",L"Quick Cheat",MB_OK);CloseHandle(singleton);return 0;}
- INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_LISTVIEW_CLASSES};InitCommonControlsEx(&controls);HRESULT apartment=RoInitialize(RO_INIT_SINGLETHREADED);
+ INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_LISTVIEW_CLASSES|ICC_TREEVIEW_CLASSES};InitCommonControlsEx(&controls);HRESULT apartment=RoInitialize(RO_INIT_SINGLETHREADED);
  int result=0;
  try { qc::App app;int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);
  if(argv){if(argc==3&&wcscmp(argv[1],L"--data-dir")==0)app.file=std::filesystem::path(argv[2])/L"shortcuts.qc";LocalFree(argv);}
  if(!app.start(instance))result=1;else {MSG message{};BOOL status=0;while((status=GetMessageW(&message,nullptr,0,0))>0) {
- if(app.editor&&app.editor->window&&IsWindowVisible(app.editor->window)&&IsDialogMessageW(app.editor->window,&message))continue;
+ if(app.workflowEditor&&app.workflowEditor->window&&IsWindowVisible(app.workflowEditor->window)&&IsDialogMessageW(app.workflowEditor->window,&message))continue;
+ if(app.editor&&app.editor->window&&IsWindowEnabled(app.editor->window)&&IsWindowVisible(app.editor->window)&&IsDialogMessageW(app.editor->window,&message))continue;
  if(app.popup&&IsWindowVisible(app.popup)&&GetForegroundWindow()==app.popup&&IsDialogMessageW(app.popup,&message))continue;
  TranslateMessage(&message);DispatchMessageW(&message);
  }if(status<0)result=1;}}
