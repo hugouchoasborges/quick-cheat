@@ -12,7 +12,7 @@ Editor::~Editor(){if(window)DestroyWindow(window);if(font)DeleteObject(font);if(
 void Editor::show() {
  if(!window) {
  WNDCLASSW cls{};cls.hInstance=app.instance;cls.lpfnWndProc=proc;cls.lpszClassName=L"QuickCheatEditor";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(app.instance,MAKEINTRESOURCEW(1));RegisterClassW(&cls);
- window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat — Shortcut library",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,1060,740,nullptr,nullptr,app.instance,this);
+ window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"Quick Cheat — Shortcut library",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,1060,740,app.popupPinned?app.popup:nullptr,nullptr,app.instance,this);
  }
  if(IsWindowVisible(window)){ShowWindow(window,SW_RESTORE);SetForegroundWindow(window);return;}
  draft=app.store;

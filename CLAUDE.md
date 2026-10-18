@@ -10,3 +10,5 @@ Do not add frameworks, polling loops, online dependencies or cross-platform abst
 Harness > Quick Cheat. Repository key: github.com/hugouchoasborges/quick-cheat.
 At task start: `node C:/Users/hugou/.claude/skills/hugo-library/scripts/harness.mjs context --cwd <repo>`.
 Product documentation: Apps > Quick Cheat, `tgslib://51be8b49abe30ba3`.
+
+Popup PIN defaults off and hides the popup on focus loss; PIN on keeps it open across focus loss/execution/hotkey and exposes Close beside PIN. Shortcut cards use native ListView tile view; retain category labels, single selection, intentional double-click/Execute/Enter and native keyboard access.

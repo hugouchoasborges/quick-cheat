@@ -67,7 +67,7 @@ void App::onForeground(HWND window) {
 }
 Profile* App::currentProfile() { for(auto& p:store.profiles)if(p.executable==target.executable)return &p;return nullptr; }
 void App::togglePopup() {
- if(popup&&IsWindowVisible(popup)){hidePopup();return;}
+ if(popup&&IsWindowVisible(popup)){if(popupPinned){SetForegroundWindow(popup);SetFocus(search);}else hidePopup();return;}
  onForeground(GetForegroundWindow());if(!targetAlive(target)){error(L"Activate an application window first, then press the activation shortcut.");return;}
  if(!popup)createPopup();refreshPopup(true);
  positionPopup(true);
@@ -83,7 +83,7 @@ void App::execute(size_t index) {
  auto* p=currentProfile();if(!p||index>=visibleRows.size()||visibleRows[index]>=p->shortcuts.size())return;
  auto chord=p->shortcuts[visibleRows[index]].chord;
  if(chord.key==store.trigger.key&&chord.modifiers==store.trigger.modifiers){error(L"This shortcut is also the Quick Cheat activation shortcut. Change the activation shortcut before running it.");return;}
- std::wstring message;if(!sendChord(target,chord,message))error(message);else hidePopup(false);
+ std::wstring message;if(!sendChord(target,chord,message))error(message);else if(!popupPinned)hidePopup(false);
 }
 bool App::commit(Store candidate) {
  bool changed=candidate.trigger.key!=store.trigger.key||candidate.trigger.modifiers!=store.trigger.modifiers;int next=hotkeyId==1?2:1;
@@ -91,7 +91,7 @@ bool App::commit(Store candidate) {
  std::wstring message;if(!saveStore(file,candidate,message)){if(changed)UnregisterHotKey(host,next);error(message,editor?editor->window:host);return false;}
  if(changed){UnregisterHotKey(host,hotkeyId);hotkeyId=next;}bool appearanceChanged=candidate.theme!=store.theme;store=std::move(candidate);if(appearanceChanged)applyTheme();if(popup)refreshPopup();return true;
 }
-void App::openEditor() { hidePopup(false);if(!editor)editor=std::make_unique<Editor>(*this);editor->show(); }
+void App::openEditor() { if(!popupPinned)hidePopup(false);if(!editor)editor=std::make_unique<Editor>(*this);if(editor->window)SetWindowLongPtrW(editor->window,GWLP_HWNDPARENT,reinterpret_cast<LONG_PTR>(popupPinned?popup:nullptr));editor->show(); }
 LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  auto* app=reinterpret_cast<App*>(GetWindowLongPtrW(h,GWLP_USERDATA));
  if(msg==WM_NCCREATE){app=static_cast<App*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(app));}
