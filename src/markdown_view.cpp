@@ -9,7 +9,7 @@ namespace qc {
 namespace {
 constexpr wchar_t property[]=L"QcMarkdown";
 struct Link {LONG begin{},end{};std::wstring url;};
-struct Reader {std::wstring markdown;std::filesystem::path directory;Palette colors{};std::vector<Link> links;int width{-1};UINT dpi{};bool rendering{};};
+struct Reader {std::vector<std::wstring> sections;std::filesystem::path directory;Palette colors{};std::vector<Link> links;int width{-1};UINT dpi{};bool rendering{};};
 Reader* readerState(HWND h){return static_cast<Reader*>(GetPropW(h,property));}
 bool sameColors(const Palette& a,const Palette& b){return a.background==b.background&&a.field==b.field&&a.panel==b.panel&&a.text==b.text&&a.muted==b.muted&&a.accent==b.accent;}
 bool safeLink(const std::wstring& url){return url.size()<=2048&&url.find_first_of(L"\r\n\t") ==url.npos&&(url.starts_with(L"https://")||url.starts_with(L"http://")||url.starts_with(L"mailto:"));}
@@ -28,10 +28,13 @@ struct Renderer {
  void paragraph(){PARAFORMAT2 p{};p.cbSize=sizeof(p);p.dwMask=PFM_STARTINDENT|PFM_OFFSET|PFM_SPACEAFTER;p.dxStartIndent=static_cast<LONG>(lists.size())*240+(style.quote?200:0);p.dySpaceAfter=100;SendMessageW(window,EM_SETPARAFORMAT,0,reinterpret_cast<LPARAM>(&p));}
  void append(const std::wstring& text){if(text.empty())return;format();SendMessageW(window,EM_REPLACESEL,FALSE,reinterpret_cast<LPARAM>(text.c_str()));lineStart=text.back()==L'\r'||text.back()==L'\n';}
  void newline(){if(!lineStart)append(L"\r");}
+ void rule(){
+  newline();auto previous=style;style=Style{};style.quote=true;style.size=180;paragraph();append(L"────────────────────────────────");newline();style=previous;paragraph();
+ }
  void image(){
  newline();std::wstring error;PreparedImage prepared;RECT area;GetClientRect(window,&area);UINT dpi=GetDpiForWindow(window);auto width=static_cast<UINT>((std::max)(static_cast<int>(area.right)-MulDiv(32,dpi,96),80));
- bool ok=images++<8&&loadWorkflowImage(state.directory,imageSource,width,prepared,error);if(ok){format();RICHEDIT_IMAGE_PARAMETERS p{};p.xWidth=MulDiv(prepared.width,2540,dpi);p.yHeight=MulDiv(prepared.height,2540,dpi);p.Type=TA_BASELINE;p.pwszAlternateText=imageAlt.c_str();p.pIStream=prepared.stream.Get();LONG before=position();auto status=SendMessageW(window,EM_INSERTIMAGE,0,reinterpret_cast<LPARAM>(&p));ok=SUCCEEDED(static_cast<HRESULT>(status));if(ok){CHARRANGE after{before+1,before+1};SendMessageW(window,EM_EXSETSEL,0,reinterpret_cast<LPARAM>(&after));}lineStart=false;}
- if(!ok)append(L"[Image unavailable: "+(imageAlt.empty()?L"attachment":imageAlt)+L"]");newline();
+ bool limited=images++>=8;bool ok=!limited&&loadWorkflowImage(state.directory,imageSource,width,prepared,error);if(ok){format();RICHEDIT_IMAGE_PARAMETERS p{};p.xWidth=MulDiv(prepared.width,2540,dpi);p.yHeight=MulDiv(prepared.height,2540,dpi);p.Type=TA_BASELINE;p.pwszAlternateText=imageAlt.c_str();p.pIStream=prepared.stream.Get();LONG before=position();auto status=SendMessageW(window,EM_INSERTIMAGE,0,reinterpret_cast<LPARAM>(&p));ok=SUCCEEDED(static_cast<HRESULT>(status));if(ok){CHARRANGE after{before+1,before+1};SendMessageW(window,EM_EXSETSEL,0,reinterpret_cast<LPARAM>(&after));}lineStart=false;}
+ if(!ok)append(limited&&state.sections.size()>1?L"[Image preview limit reached. Select this step to view its images.]":L"[Image unavailable: "+(imageAlt.empty()?L"attachment":imageAlt)+L"]");newline();
  if(ok&&!imageAlt.empty()){auto previous=style;style.quote=true;style.size=180;append(imageAlt);newline();style=previous;}
  }
  static int enterBlock(MD_BLOCKTYPE type,void* detail,void* context){auto& r=*static_cast<Renderer*>(context);r.blocks.push_back(r.style);
@@ -39,7 +42,7 @@ struct Renderer {
  case MD_BLOCK_CODE:r.newline();r.style.code=true;r.style.size=200;break;case MD_BLOCK_QUOTE:r.newline();r.style.quote=true;break;
  case MD_BLOCK_UL:r.newline();r.lists.push_back({false,1});break;case MD_BLOCK_OL:r.newline();r.lists.push_back({true,static_cast<MD_BLOCK_OL_DETAIL*>(detail)->start});break;
  case MD_BLOCK_LI:{r.newline();r.paragraph();auto* item=static_cast<MD_BLOCK_LI_DETAIL*>(detail);if(item->is_task)r.append(item->task_mark==L' '?L"☐ ":L"☑ ");else if(!r.lists.empty()&&r.lists.back().ordered)r.append(std::to_wstring(r.lists.back().next++)+L". ");else r.append(L"• ");break;}
- case MD_BLOCK_HR:r.newline();r.append(L"────────────");r.newline();break;default:break;}r.paragraph();return 0;}
+ case MD_BLOCK_HR:r.rule();break;default:break;}r.paragraph();return 0;}
  static int leaveBlock(MD_BLOCKTYPE type,void*,void* context){auto& r=*static_cast<Renderer*>(context);if(type==MD_BLOCK_P||type==MD_BLOCK_H||type==MD_BLOCK_CODE||type==MD_BLOCK_LI||type==MD_BLOCK_QUOTE)r.newline();if((type==MD_BLOCK_UL||type==MD_BLOCK_OL)&&!r.lists.empty())r.lists.pop_back();if(!r.blocks.empty()){r.style=r.blocks.back();r.blocks.pop_back();}return 0;}
  static int enterSpan(MD_SPANTYPE type,void* detail,void* context){auto& r=*static_cast<Renderer*>(context);r.spans.push_back(r.style);
  switch(type){case MD_SPAN_STRONG:r.style.bold=true;break;case MD_SPAN_EM:r.style.italic=true;break;case MD_SPAN_CODE:r.style.code=true;r.style.size=200;break;case MD_SPAN_DEL:r.style.strike=true;break;
@@ -51,13 +54,13 @@ struct Renderer {
 void render(HWND window,Reader& state){
  if(state.rendering)return;state.rendering=true;RECT rect;GetClientRect(window,&rect);state.width=rect.right;state.dpi=GetDpiForWindow(window);state.links.clear();
  SendMessageW(window,WM_SETREDRAW,FALSE,0);SendMessageW(window,EM_SETREADONLY,FALSE,0);SetWindowTextW(window,L"");SendMessageW(window,EM_SETBKGNDCOLOR,0,state.colors.field);
- Renderer output{window,state};MD_PARSER parser{};parser.flags=MD_FLAG_NOHTML|MD_FLAG_STRIKETHROUGH|MD_FLAG_TASKLISTS;parser.enter_block=Renderer::enterBlock;parser.leave_block=Renderer::leaveBlock;parser.enter_span=Renderer::enterSpan;parser.leave_span=Renderer::leaveSpan;parser.text=Renderer::text;
- if(md_parse(state.markdown.c_str(),static_cast<MD_SIZE>(state.markdown.size()),&parser,&output)!=0){SetWindowTextW(window,state.markdown.c_str());state.links.clear();}
- SendMessageW(window,EM_SETREADONLY,TRUE,0);SendMessageW(window,EM_EMPTYUNDOBUFFER,0,0);SendMessageW(window,EM_SETSEL,0,0);SendMessageW(window,EM_SCROLLCARET,0,0);SendMessageW(window,WM_SETREDRAW,TRUE,0);InvalidateRect(window,nullptr,TRUE);state.rendering=false;
+ MD_PARSER parser{};parser.flags=MD_FLAG_NOHTML|MD_FLAG_STRIKETHROUGH|MD_FLAG_TASKLISTS;parser.enter_block=Renderer::enterBlock;parser.leave_block=Renderer::leaveBlock;parser.enter_span=Renderer::enterSpan;parser.leave_span=Renderer::leaveSpan;parser.text=Renderer::text;
+ unsigned images=0;for(size_t i=0;i<state.sections.size();++i){Renderer output{window,state};output.images=images;output.paragraph();if(i)output.rule();const auto& source=state.sections[i];if(md_parse(source.c_str(),static_cast<MD_SIZE>(source.size()),&parser,&output)!=0){std::wstring plain;for(const auto& part:state.sections)plain+=part+L"\r\n\r\n";SetWindowTextW(window,plain.c_str());state.links.clear();break;}images=output.images;output.newline();}
+ SendMessageW(window,EM_SETREADONLY,TRUE,0);SendMessageW(window,EM_EMPTYUNDOBUFFER,0,0);SendMessageW(window,EM_SETSEL,0,0);SendMessageW(window,EM_SCROLLCARET,0,0);SendMessageW(window,WM_SETREDRAW,TRUE,0);RedrawWindow(window,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_FRAME);state.rendering=false;
 }
 LRESULT CALLBACK readerProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR){auto* state=readerState(h);
- if(msg==WM_SIZE&&state&&!state->rendering&&!state->markdown.empty()){RECT r;GetClientRect(h,&r);if(r.right!=state->width)SetTimer(h,1,140,nullptr);}
- if(msg==WM_TIMER&&w==1){KillTimer(h,1);if(state&&!state->markdown.empty())render(h,*state);return 0;}
+ if(msg==WM_SIZE&&state&&!state->rendering&&!state->sections.empty()){RECT r;GetClientRect(h,&r);if(r.right!=state->width)SetTimer(h,1,140,nullptr);}
+ if(msg==WM_TIMER&&w==1){KillTimer(h,1);if(state&&!state->sections.empty())render(h,*state);return 0;}
  if(msg==WM_NCDESTROY){KillTimer(h,1);RemoveWindowSubclass(h,readerProc,104);RemovePropW(h,property);delete state;}
  return DefSubclassProc(h,msg,w,l);
 }
@@ -65,14 +68,15 @@ LRESULT CALLBACK readerProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR
 HWND createMarkdownView(HWND parent,int id){
  static HMODULE module=LoadLibraryExW(L"Msftedit.dll",nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);if(!module)return nullptr;
  HWND h=CreateWindowExW(0,MSFTEDIT_CLASS,L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY,0,0,0,0,parent,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),GetModuleHandleW(nullptr),nullptr);if(!h)return nullptr;
- auto* state=new Reader;SetPropW(h,property,state);SetWindowSubclass(h,readerProc,104,0);SendMessageW(h,EM_SETUNDOLIMIT,0,0);SendMessageW(h,EM_EXLIMITTEXT,0,16384);SendMessageW(h,EM_SETEVENTMASK,0,ENM_LINK);SendMessageW(h,EM_AUTOURLDETECT,FALSE,0);SendMessageW(h,EM_SETMARGINS,EC_LEFTMARGIN|EC_RIGHTMARGIN,MAKELPARAM(10,10));return h;
+ auto* state=new Reader;SetPropW(h,property,state);SetWindowSubclass(h,readerProc,104,0);SendMessageW(h,EM_SETUNDOLIMIT,0,0);SendMessageW(h,EM_EXLIMITTEXT,0,1048576);SendMessageW(h,EM_SETEVENTMASK,0,ENM_LINK);SendMessageW(h,EM_AUTOURLDETECT,FALSE,0);SendMessageW(h,EM_SETMARGINS,EC_LEFTMARGIN|EC_RIGHTMARGIN,MAKELPARAM(10,10));return h;
 }
-void showMarkdown(HWND reader,const std::wstring& markdown,const std::filesystem::path& directory,const Palette& colors){
- auto* state=readerState(reader);if(!state)return;RECT rect;GetClientRect(reader,&rect);UINT dpi=GetDpiForWindow(reader);if(state->markdown==markdown&&state->directory==directory&&sameColors(state->colors,colors)&&state->width==rect.right&&state->dpi==dpi)return;
- state->markdown=markdown;state->directory=directory;state->colors=colors;render(reader,*state);
+void showMarkdown(HWND reader,const std::wstring& markdown,const std::filesystem::path& directory,const Palette& colors){showMarkdownSections(reader,{markdown},directory,colors);}
+void showMarkdownSections(HWND reader,const std::vector<std::wstring>& sections,const std::filesystem::path& directory,const Palette& colors){
+ auto* state=readerState(reader);if(!state)return;RECT rect;GetClientRect(reader,&rect);UINT dpi=GetDpiForWindow(reader);if(state->sections==sections&&state->directory==directory&&sameColors(state->colors,colors)&&state->width==rect.right&&state->dpi==dpi)return;
+ state->sections=sections;state->directory=directory;state->colors=colors;render(reader,*state);
 }
-void restyleMarkdown(HWND reader,const Palette& colors){auto* state=readerState(reader);if(state&&!sameColors(state->colors,colors)){state->colors=colors;if(!state->markdown.empty())render(reader,*state);else SendMessageW(reader,EM_SETBKGNDCOLOR,0,colors.field);}}
-void clearMarkdown(HWND reader){auto* state=readerState(reader);if(!state||state->rendering)return;KillTimer(reader,1);state->markdown.clear();state->links.clear();state->width=-1;SetWindowTextW(reader,L"");SendMessageW(reader,EM_EMPTYUNDOBUFFER,0,0);}
+void restyleMarkdown(HWND reader,const Palette& colors){auto* state=readerState(reader);if(state&&!sameColors(state->colors,colors)){state->colors=colors;if(!state->sections.empty())render(reader,*state);else SendMessageW(reader,EM_SETBKGNDCOLOR,0,colors.field);}}
+void clearMarkdown(HWND reader){auto* state=readerState(reader);if(!state||state->rendering)return;KillTimer(reader,1);state->sections.clear();state->links.clear();state->width=-1;SetWindowTextW(reader,L"");SendMessageW(reader,EM_EMPTYUNDOBUFFER,0,0);}
 bool handleMarkdownLink(ENLINK* event){
  if(event->msg!=WM_LBUTTONUP)return false;auto* state=readerState(event->nmhdr.hwndFrom);if(!state)return false;POINTL point{static_cast<short>(LOWORD(event->lParam)),static_cast<short>(HIWORD(event->lParam))};LONG position=static_cast<LONG>(SendMessageW(event->nmhdr.hwndFrom,EM_CHARFROMPOS,0,reinterpret_cast<LPARAM>(&point)));std::wstring url;for(const auto& link:state->links)if(link.begin<=position&&position<link.end){url=link.url;break;}if(!safeLink(url))return false;ShellExecuteW(event->nmhdr.hwndFrom,L"open",url.c_str(),nullptr,nullptr,SW_SHOWNORMAL);return true;
 }
