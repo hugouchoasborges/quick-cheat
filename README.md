@@ -8,7 +8,7 @@ Built with C++ and native Windows controls, with a focus on speed and low memory
 
 ## Download
 
-[Download Quick Cheat for Windows x64 — v0.2.0-alpha.8](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.2.0-alpha.8)
+[Download Quick Cheat for Windows x64 — v0.3.0-alpha.2](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.3.0-alpha.2)
 
 Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additional runtime is needed. This is an early alpha release.
 
@@ -55,7 +55,7 @@ Use the **gear** to the left of PIN, or open **Settings...** from the tray menu.
 
 The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Use the gear beside PIN to open Settings in the same main window. Back returns to the library after confirming pending edits. Escape and unpinned focus loss hide the window while retaining the draft.
 
-## Portable collections — 0.3.0-alpha.1 candidate
+## Portable collections
 
 Share an application's shortcuts and workflows as a single `.quickcheat.json` file, including Markdown and attached PNG images. In **Settings → Shortcuts** or **Workflows**, use **Export collection...** after saving your edits, or **Import collection...** to preview a file.
 
@@ -63,7 +63,7 @@ Choose **Add** to keep existing content and skip exact duplicates, or **Replace*
 
 ![Portable collections in dark settings](docs/images/collections-settings-dark.png)
 
-See the [format and limits](docs/collection-format.md) and [candidate acceptance checklist](docs/validation-0.3.0-alpha.1.md). This candidate adds local file sharing; community browsing and voting remain planned.
+See the [format and limits](docs/collection-format.md) and [acceptance checklist](docs/validation-0.3.0-alpha.1.md). This release adds local file sharing; community browsing and voting remain planned.
 
 ## Local data
 
@@ -111,7 +111,7 @@ Exit Quick Cheat before replacing the executable. This release reads existing v1
 
 Install Visual Studio 2022 with **Desktop development with C++**, the Windows SDK and CMake tools. In PowerShell, run `./scripts/build.ps1` to build Windows x64 Release and run the headless tests. The executable is written to `build/Release/QuickCheat.exe`.
 
-Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` captures the popup and settings using separate demo data. See the [release notes](docs/releases/0.2.0-alpha.8.md) and [validation notes](docs/validation-0.2.0-alpha.8.md).
+Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` captures the popup and settings using separate demo data. See the [release notes](docs/releases/0.3.0-alpha.2.md) and [validation notes](docs/validation-0.3.0-alpha.2.md).
 
 Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
 
