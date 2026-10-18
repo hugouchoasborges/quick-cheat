@@ -4,12 +4,13 @@
 #include <commctrl.h>
 #include <memory>
 namespace qc {
-constexpr wchar_t version[]=L"0.2.0-alpha.5";
+constexpr wchar_t version[]=L"0.2.0-alpha.6";
 constexpr UINT ForegroundChanged=WM_APP+1, TrayMessage=WM_APP+2, ExecuteRow=WM_APP+3;
 constexpr UINT CmdOpen=100,CmdManage=101,CmdData=102,CmdExit=103,CmdNew=104,CmdExecute=105,CmdShortcuts=106,CmdWorkflows=107,CmdManageWorkflows=108,CmdExpand=109,CmdPin=110,CmdPopupClose=111;
 struct Target { HWND window{}; DWORD process{}; std::wstring executable,name; };
 struct Editor;
 struct WorkflowEditor;
+struct ShortcutCategory {std::wstring name;bool collapsed{};};
 struct App {
  HINSTANCE instance{};HWND host{},popup{},rows{},heading{},empty{},footer{},search{};HFONT font{},labelFont{},bold{};Theme theme;bool updatingPopup{};UINT popupDpi{};
  HWINEVENTHOOK foregroundHook{};Target target;Store store;std::filesystem::path file;
@@ -17,6 +18,7 @@ struct App {
  HWND workflowTree{},workflowDetail{},shortcutDetail{};bool workflowsVisible{},refreshingWorkflows{};
  SIZE popupSize{1040,760};bool popupExpanded{},popupSizing{};
  bool popupPinned{};int tileColumns{1},tileWidth{300};UINT tileDpi{};
+ std::vector<ShortcutCategory> shortcutCategories;std::wstring categoryProfile;bool categorySearch{},categorySaveWarning{};
  std::unique_ptr<WorkflowEditor> workflowEditor;
  std::unique_ptr<Editor> editor;std::vector<size_t> visibleRows;bool trayAdded{};int hotkeyId{1};UINT taskbarCreated{};
  App();~App();
@@ -25,6 +27,7 @@ struct App {
  void togglePopup();void hidePopup(bool restore=true);void refreshPopup(bool clearSearch=false);void createPopup();void layoutPopup();void drawRow(DRAWITEMSTRUCT* item);void applyTheme();
  void openEditor();void execute(size_t visibleIndex);void trayMenu();void addTray();
  void positionPopup(bool opening);void togglePopupSize();void rememberPopupSize();void layoutShortcutTiles();void updateShortcutDetail();void populateShortcutTiles();int selectedShortcut() const;void selectShortcut(int index);
+ bool shortcutVisible(int index) const;void moveShortcutSelection(int direction);void syncCategoryStates();bool clickCategory(POINT point);void drawCategory(NMLVCUSTOMDRAW* draw);
  void createWorkflowPopup();void refreshWorkflowPopup();void layoutWorkflowPopup();void selectWorkflowStep();void styleWorkflowPopup();void openWorkflowEditor(const std::wstring& executable);
  bool commit(Store candidate);
  Profile* currentProfile();

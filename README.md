@@ -45,6 +45,8 @@ You can also open the library from the tray icon. If the default hotkey is alrea
 
 Shortcuts and settings are stored in `%LOCALAPPDATA%\QuickCheat\shortcuts.qc`. The previous save is kept as `shortcuts.qc.bak`. To restore it, exit the app, keep a copy of the current file and replace it with the backup.
 
+Category expansion preferences are saved separately in `ui-state.ini` in the same folder, including when using `--data-dir`. Include this file in backups to preserve the layout.
+
 For separate demo or portable data, launch `QuickCheat.exe --data-dir <directory>`. Only one instance can run per Windows session.
 
 ## Current scope
@@ -53,7 +55,7 @@ Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline;
 
 Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
 
-## Workflows — 0.2.0-alpha.5 candidate
+## Workflows — 0.2.0-alpha.6 candidate
 
 The development build adds local step-by-step guides for each application. In the shortcut library, choose an application and click **Manage workflows**. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
@@ -68,6 +70,8 @@ The popup opens larger and fits the current monitor. Drag its edges to resize, d
 Applications with saved workflows show **Shortcuts / Workflows** tabs in the popup. Expand a guide and select a step to read its full text. At wider sizes, guides and step text appear side by side; smaller windows stack them. Shortcuts use responsive cards, with category, description and keycaps kept together. Long descriptions or key combinations have a full-text reader. Search filters workflow titles. These are reference guides; they do not execute commands.
 
 The active application's name is larger and centered above search. Use the pin icon in the top-right corner to keep the popup open; the red **×** beside it closes the popup while leaving Quick Cheat in the tray. Hover over either icon for its label.
+
+Shortcuts appear under category headers with a divider. Click a header to collapse or expand its cards. Quick Cheat remembers each category's state for each application across restarts. New categories start expanded; uncategorized shortcuts appear under **General**. Search reveals matching shortcuts without changing saved expansion preferences. With a category header focused, use Left/Right to collapse/expand or Space to toggle.
 
 ![Local workflow editor](docs/images/workflow-editor-dark.png)
 
