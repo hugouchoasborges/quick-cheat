@@ -14,3 +14,5 @@ The popup is a compact command palette: search, categorized rows, keycaps, selec
 
 ## Delivery
 Gitflow with main reserved for published releases. Each implemented version receives a Library child page with decisions, changes, validation and limitations. Product source: Apps > Quick Cheat (`tgslib://51be8b49abe30ba3`).
+
+Context and readability: retain the last valid external app throughout Quick Cheat UI interaction. Popup supports native resizing, Expand/Restore, responsive workflow reading and wrapped shortcut descriptions. Window size preference is session-only; no storage schema change in alpha.2.

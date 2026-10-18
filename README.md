@@ -53,13 +53,15 @@ Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline;
 
 Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
 
-## Workflows — 0.2.0-alpha.1 candidate
+## Workflows — 0.2.0-alpha.2 candidate
 
 The development build adds local step-by-step guides for each application. In the shortcut library, choose an application and click **Manage workflows**. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
 ![Expandable workflow guides in the popup](docs/images/workflow-popup-dark.png)
 
-Applications with saved workflows show **Shortcuts / Workflows** tabs in the popup. Expand a guide and select a step to read its full text. Search filters workflow titles. These are reference guides; they do not execute commands.
+The popup opens larger and fits the current monitor. Drag its edges to resize, drag the header to move it, or use **Expand / Restore**. Your preferred size is kept until the app exits. Clicking Quick Cheat retains the last valid external application context.
+
+Applications with saved workflows show **Shortcuts / Workflows** tabs in the popup. Expand a guide and select a step to read its full text. At wider sizes, guides and step text appear side by side; smaller windows stack them. Long shortcut descriptions wrap, with a full-text reader for rows that reach the native height limit. Search filters workflow titles. These are reference guides; they do not execute commands.
 
 ![Local workflow editor](docs/images/workflow-editor-dark.png)
 

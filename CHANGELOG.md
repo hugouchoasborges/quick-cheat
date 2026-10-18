@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-alpha.2 — 2026-10-18
+
+Retain the last valid foreground application while interacting with Quick Cheat or transient tray/menu windows; failed window identification no longer clears the context. Popup selection is cleared only when a valid new target is identified.
+
+Larger monitor-constrained popup, native edge resizing, header dragging, Expand/Restore and session-size retention. Responsive workflow layout with a larger step reader; abbreviated tree labels avoid horizontal scrolling. Shortcut descriptions wrap with measured row heights; a full-text reader handles the native 255-pixel row limit. Data schema remains v3. Candidate awaiting manual acceptance.
+
 ## 0.2.0-alpha.1 — 2026-10-18
 
 Local per-application workflows: title and ordered text steps; dedicated native editor with add/edit/delete/reorder and unsaved-change prompts. Applications with workflows show Shortcuts/Workflows tabs in the popup, with expandable guides, title search and a full-text step reader. Workflows do not execute commands. Shared System/Light/Dark themes and DPI-aware layout.
