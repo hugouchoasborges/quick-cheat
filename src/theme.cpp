@@ -45,7 +45,7 @@ void Theme::style(HWND window){
 }
 LRESULT Theme::controlColor(UINT message,HDC dc,HWND widget){
  wchar_t cls[64]{};GetClassNameW(widget,cls,64);bool editable=message==WM_CTLCOLOREDIT||message==WM_CTLCOLORLISTBOX||wcscmp(cls,L"Edit")==0||wcscmp(cls,L"ComboBox")==0;
- bool caption=wcscmp(cls,L"Static")==0&&GetDlgCtrlID(widget)!=306;
+ bool caption=wcscmp(cls,L"Static")==0&&GetDlgCtrlID(widget)!=306&&!GetPropW(widget,L"QcHeading");
  SetTextColor(dc,!IsWindowEnabled(widget)||caption?colors.muted:colors.text);SetBkMode(dc,editable?OPAQUE:TRANSPARENT);SetBkColor(dc,editable?colors.field:colors.background);
  if(wcscmp(cls,L"ListBox")==0||GetDlgCtrlID(widget)==6){SetBkColor(dc,colors.background);return reinterpret_cast<LRESULT>(background);}
  return reinterpret_cast<LRESULT>(editable?field:GetStockObject(NULL_BRUSH));
@@ -59,7 +59,16 @@ bool Theme::drawControl(DRAWITEMSTRUCT* item){
  FillRect(dc,&r,onPanel?panel:background);
  rounded(dc,r,fill,primary&&enabled?colors.accent:colors.border,MulDiv(10,GetDpiForWindow(item->hwndItem),96));
  auto old=SelectObject(dc,reinterpret_cast<HFONT>(SendMessageW(item->hwndItem,WM_GETFONT,0,0)));wchar_t label[160]{};GetWindowTextW(item->hwndItem,label,160);
- paintText(dc,label,r,text,DT_SINGLELINE|DT_VCENTER|DT_CENTER);SelectObject(dc,old);
+ if(item->CtlID==110||item->CtlID==111){
+  UINT dpi=GetDpiForWindow(item->hwndItem);auto px=[&](int n){return MulDiv(n,dpi,96);};int cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2;
+  auto color=item->CtlID==111&&enabled&&!highContrast?(dark?RGB(255,110,110):RGB(190,40,40)):text;
+  HPEN pen=CreatePen(PS_SOLID,(std::max)(1,px(2)),color);auto oldPen=SelectObject(dc,pen);
+  auto point=[&](int x,int y){if(item->CtlID==110&&!primary){int rotatedX=MulDiv(x-y,707,1000);y=MulDiv(x+y,707,1000);x=rotatedX;}return POINT{cx+px(x),cy+px(y)};};
+  auto line=[&](int x1,int y1,int x2,int y2){auto a=point(x1,y1),b=point(x2,y2);MoveToEx(dc,a.x,a.y,nullptr);LineTo(dc,b.x,b.y);};
+  if(item->CtlID==111){line(-5,-5,6,6);line(5,-5,-6,6);}
+  else{line(-5,-8,5,-8);line(-3,-8,-3,-2);line(3,-8,3,-2);line(-3,-2,-7,3);line(3,-2,7,3);line(-7,3,7,3);line(0,3,0,10);}
+  SelectObject(dc,oldPen);DeleteObject(pen);
+ }else paintText(dc,label,r,text,DT_SINGLELINE|DT_VCENTER|DT_CENTER);SelectObject(dc,old);
  if(item->itemState&ODS_FOCUS){InflateRect(&r,-3,-3);DrawFocusRect(dc,&r);}return true;
 }
 LRESULT CALLBACK Theme::widgetProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
