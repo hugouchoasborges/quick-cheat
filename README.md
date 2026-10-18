@@ -1,44 +1,66 @@
 # Quick Cheat
 
-A small Windows shortcut reference and launcher. C++20, Win32 and native Windows controls; no web runtime, background polling or network access.
+Remember less. Keep your keyboard shortcuts close.
 
-## Current candidate: 0.1.0-alpha.4
+Quick Cheat is a small Windows app that shows the shortcuts you saved for the application you are using. Search by name, category or keys, then run a shortcut without leaving your workflow.
 
-- Tray-resident app with a configurable global popup toggle (default **Ctrl+Alt+Space**).
-- If that default is occupied on first launch, tries **Ctrl+Alt+Shift+Space** and shows a notification. Existing configured conflicts are reported; use the tray menu to change activation.
-- Raycast-inspired popup with search, category headings, right-aligned keycaps and explicit **Execute**. Clicking a row selects it; selection never injects a shortcut.
-- Shared **System**, **Light** and **Dark** appearance across the popup and shortcut library, saved from the Appearance selector. System follows Windows app colors through documented UISettings events; High Contrast uses system colors.
-- Local editor: select the current app or browse to an executable, create/edit/delete shortcuts, record a combination or type it, and choose/type categories.
-- English UI, Unicode data, versioned UTF-8 storage, durable replacement and previous-save backup.
-- Original lavender keycap/Q icon embedded in the executable, tray and window classes, with ten sizes from 16 to 256px.
+Built with C++ and native Windows controls, with a focus on speed and low memory use. Everything stays on your computer. No accounts, telemetry or internet connection required.
 
-## Run
+## Download
 
-Run `QuickCheat.exe`. The application starts in the notification area; Windows may put its icon under **Show hidden icons**. Right-click it and choose **Manage shortcuts** (or double-click the icon).
-Activate your application and press the popup toggle. Search receives keyboard focus while Quick Cheat retains the external application as its target. Type a description, category or key combination; use Up/Down or click a row to select it, then double-click the row, click **Execute**, or press Enter from search. Toggle again or use Esc to close and restore the target when possible. **Ctrl+,** from search opens management.
-For a new application, open **Manage shortcuts**, enter a description, category and key combination, then click **Save shortcut**. Choose **Appearance > System / Light / Dark** to change the shared theme immediately. Reactivate the application and open its popup to use your shortcuts.
-Use **New shortcut** to add another entry. Selecting a row edits that entry. Category names are entered directly or selected from the existing list; empty categories appear as **General**. **Browse application** adds an installed or portable `.exe` profile.
-Key syntax includes `Ctrl+S`, `Ctrl+Shift+F10`, `Alt+Enter`, `Win+Left`, `Ctrl+Plus`, `PageDown`. The **Record** button captures supported single combinations; Esc cancels recording. Release physical modifier keys before invoking Execute.
+[Download Quick Cheat for Windows x64](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.1.0-alpha.4)
 
-## Data and recovery
+Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additional runtime is needed. This is an early alpha release.
 
-Data: `%LOCALAPPDATA%\QuickCheat\shortcuts.qc`; previous save: `shortcuts.qc.bak`. The file is a schema-versioned, escaped UTF-8 format, with no third-party parser. Schema v2 stores appearance; v1 loads with System selected and is migrated on the next explicit save. Alpha.1 cannot read v2 files. Saves flush a temporary file and replace the original; failed saves preserve in-memory data and report an error. Invalid input files are rejected without being overwritten.
-To recover, exit Quick Cheat, keep a copy of the damaged file and replace `shortcuts.qc` with a known-good `shortcuts.qc.bak`. Data stays on this computer; there are no accounts, telemetry or community downloads in this version. `--data-dir <directory>` selects a separate data directory for testing or portable use; only one instance runs per session.
+## A shortcut library for each app
 
-## Build and verify
+![Quick Cheat popup in dark mode](docs/images/popup-dark.png)
 
-Install Visual Studio 2022 **Desktop development with C++**, Windows SDK and CMake tools. Run `./scripts/build.ps1` in PowerShell. The script builds Windows x64 Release with a static C++ runtime, then runs the core tests. Output: `build/Release/QuickCheat.exe`. The executable needs no separately installed .NET or VC++ runtime.
-Run `./scripts/create-desktop-shortcut.ps1` after building to create **Quick Cheat** on the Windows desktop. It points directly at `build/Release/QuickCheat.exe`, so subsequent builds use the same shortcut; its icon also comes from the executable. Unrelated existing shortcuts are preserved. `./scripts/generate-icon.ps1` reproduces the authored SVG, PNG preview and multi-size ICO in `assets/` using Windows System.Drawing; the app needs no asset files alongside its executable.
-For desktop integration checks, first exit Quick Cheat and run `build/Release/qc_integration.exe build/Release/QuickCheat.exe`. This opens controlled test windows using isolated temporary data and verifies native hotkey-message handling, editor persistence, popup focus, actual SendInput delivery, foreground switching and restart. It dispatches `WM_HOTKEY` directly; physical activation and conflicts with other software need manual verification. Do not interact with other windows during the check; Windows foreground restrictions can interrupt automation.
-`build/Release/qc_preview.exe build/Release/QuickCheat.exe` captures only the app's popup/editor into `build/qa` and samples idle resource usage. It uses separate sample data. The GitHub workflow builds and runs the headless core tests; interactive tests require a desktop session.
+- Open a searchable popup for the current application.
+- Organize your shortcuts into categories.
+- Click once to select; double-click, press Enter or click **Execute** to run.
+- Add, edit and record shortcuts in the local library.
+- Choose **System**, **Light** or **Dark** appearance.
 
-## Compatibility and limitations
+### Light theme
 
-Windows x64 only. The intended API baseline is Windows 10 1809+ / Windows 11; validation so far covers the development machine, not a complete OS/monitor matrix. A manifest enables common controls v6, Per-Monitor V2 DPI and normal user privileges. No undocumented APIs or forced focus bypasses are used.
-Profiles match the executable filename, case-insensitively. Different installations with the same filename share a profile; browser tabs and application versions are not separate contexts. Protected/elevated apps may block input; focus changes cancel stale clicks. The app does not elevate itself. A successful SendInput call means Windows accepted the events, not that the target application performed the expected command.
-This alpha supports one key combination per shortcut. It has no hold-to-show mode, multi-step macros, workflows, dock, online sharing, automatic startup, installer or updater. System dialogs and native scrollbars follow the OS where documented APIs do not expose per-app theming. DWM titlebar color/corner attributes require supported Windows versions and degrade gracefully; no private uxtheme exports are used. Live OS-theme transitions, High Contrast and mixed-monitor/DPI behavior still require manual acceptance on additional machines.
+![Quick Cheat popup in light mode](docs/images/popup-light.png)
 
-## Development
+### Manage your shortcuts
 
-Gitflow: `main` contains delivered releases; `develop` integrates completed features; `feature/*` holds work; `release/*` prepares release candidates; `hotfix/*` fixes delivered releases. The initial scaffold on main is preserved until release promotion. Each implemented version has a child page in Hugo Library under **Apps > Quick Cheat**, with decisions, changes, validation and limitations.
-License: MIT; see [LICENSE](LICENSE).
+![Quick Cheat shortcut library](docs/images/editor-dark.png)
+
+Screenshots use isolated demo data. The sample shortcuts are illustrative; applications do not come with preloaded profiles.
+
+## Getting started
+
+1. Launch Quick Cheat. It runs in the Windows notification area.
+2. Open an application and press **Ctrl+Alt+Space** to show its shortcuts.
+3. Choose **Manage shortcuts** to add descriptions, categories and key combinations.
+4. Search or select a shortcut, then double-click it, click **Execute** or press Enter. Press **Esc** to close the popup.
+
+You can also open the library from the tray icon. If the default hotkey is already in use on first launch, Quick Cheat tries **Ctrl+Alt+Shift+Space** and notifies you. Change the activation hotkey in the library. Release held modifier keys before executing a shortcut.
+
+## Local data
+
+Shortcuts and settings are stored in `%LOCALAPPDATA%\QuickCheat\shortcuts.qc`. The previous save is kept as `shortcuts.qc.bak`. To restore it, exit the app, keep a copy of the current file and replace it with the backup.
+
+For separate demo or portable data, launch `QuickCheat.exe --data-dir <directory>`. Only one instance can run per Windows session.
+
+## Current scope
+
+Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline; compatibility has not been verified on every Windows version or monitor setup. Elevated or protected applications may block shortcut execution. Profiles are matched by executable filename, so apps with the same filename share a profile.
+
+Each shortcut contains one key combination. Workflows, docks, community sharing, an installer and automatic updates are planned for later consideration.
+
+## Build from source
+
+Install Visual Studio 2022 with **Desktop development with C++**, the Windows SDK and CMake tools. In PowerShell, run `./scripts/build.ps1` to build Windows x64 Release and run the headless tests. The executable is written to `build/Release/QuickCheat.exe`.
+
+Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` can capture the popup and library using separate demo data; see [validation notes](docs/validation-0.1.0-alpha.4.md).
+
+Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
+
+## License
+
+[MIT](LICENSE)

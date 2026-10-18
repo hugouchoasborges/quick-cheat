@@ -26,7 +26,7 @@ int wmain(int argc,wchar_t** argv){
  try {
  auto appExe=std::filesystem::absolute(argv[1]);auto output=appExe.parent_path().parent_path()/L"qa";std::filesystem::create_directories(output);
  auto data=output/(L"preview-"+std::to_wstring(GetCurrentProcessId()));qc::Store s;s.trigger.modifiers=7;
- s.profiles.push_back({L"qc_integration.exe",L"Sample application",{{L"Save document",L"File",{MOD_CONTROL,'S'}},{L"Save as",L"File",{MOD_CONTROL|MOD_SHIFT,'S'}},{L"Open document",L"File",{MOD_CONTROL,'O'}},{L"Undo last action",L"Edit",{MOD_CONTROL,'Z'}}}});
+ s.profiles.push_back({L"qc_integration.exe",L"Visual Studio Code (demo)",{{L"Save file",L"File",{MOD_CONTROL,'S'}},{L"Open file",L"File",{MOD_CONTROL,'O'}},{L"Find in file",L"Search",{MOD_CONTROL,'F'}},{L"Search across files",L"Search",{MOD_CONTROL|MOD_SHIFT,'F'}},{L"Command palette",L"Navigation",{MOD_CONTROL|MOD_SHIFT,'P'}},{L"Go to file",L"Navigation",{MOD_CONTROL,'P'}},{L"Toggle sidebar",L"View",{MOD_CONTROL,'B'}}}});
  std::wstring error;if(!qc::saveStore(data/L"shortcuts.qc",s,error))throw std::runtime_error("Cannot save preview data");
  Child app,target;app.start(L"\""+appExe.wstring()+L"\" --data-dir \""+data.wstring()+L"\"");auto host=waitWindow(L"QuickCheatHost");pause(400);
  PROCESS_MEMORY_COUNTERS_EX memory{};memory.cb=sizeof(memory);GetProcessMemoryInfo(app.pi.hProcess,reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memory),sizeof(memory));
