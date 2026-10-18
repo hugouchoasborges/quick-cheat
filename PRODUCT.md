@@ -18,3 +18,5 @@ Gitflow with main reserved for published releases. Each implemented version rece
 Context and readability: retain the last valid external app throughout Quick Cheat UI interaction. Popup supports native resizing, Expand/Restore, responsive workflow reading and wrapped shortcut descriptions. Window size preference is session-only; no storage schema change in alpha.2.
 
 Alpha.3: PIN defaults off; popup hides on focus loss while tray stays running. PIN on keeps popup open until Escape/Close, including after shortcut execution. PIN state is session-only. Shortcut cards contain category, description and keys in a responsive grid.
+
+Alpha.4: workflow steps accept basic Markdown and local image attachments, rendered in the main popup. A native attachment picker copies images into the data folder. Markdown and relative references remain schema v3 text. Backups include the attachments directory; guides remain local reference material. External image downloads and HTML execution are excluded.

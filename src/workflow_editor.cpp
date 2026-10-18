@@ -1,9 +1,11 @@
 #include "app.hpp"
 #include "workflows.hpp"
+#include "attachments.hpp"
+#include <commdlg.h>
 #include <algorithm>
 namespace qc {
 namespace {
-enum {FlowList=400,FlowTitle,StepList,StepText,NewFlow,SaveFlow,DeleteFlow,NewStep,ApplyStep,DeleteStep,StepUp,StepDown,Close,Status,PageTitle,TitleLabel,StepsLabel,TextLabel};
+enum {FlowList=400,FlowTitle,StepList,StepText,NewFlow,SaveFlow,DeleteFlow,NewStep,ApplyStep,DeleteStep,StepUp,StepDown,Close,Status,PageTitle,TitleLabel,StepsLabel,TextLabel,AttachImage};
 bool hasText(const std::wstring& text){return text.find_first_not_of(L" \t\r\n")!=text.npos;}
 Profile* findProfile(Store& store,const std::wstring& key){for(auto& p:store.profiles)if(p.executable==key)return &p;return nullptr;}
 void syncWorkflowDraft(App& app){if(app.editor)for(auto& profile:app.editor->draft.profiles)if(auto* saved=findProfile(app.store,profile.executable))profile.workflows=saved->workflows;}
@@ -43,6 +45,7 @@ void WorkflowEditor::layout(){
  place(StepsLabel,328,136,content,20);place(StepList,328,164,content,164);
  place(NewStep,328,338,100,30);place(DeleteStep,436,338,100,30);place(StepUp,544,338,100,30);place(StepDown,652,338,108,30);
  place(TextLabel,328,384,content,20);place(StepText,328,412,content,height-546);place(ApplyStep,328,height-124,132,32);
+ place(AttachImage,472,height-124,148,32);
  place(SaveFlow,width-300,height-66,164,36);place(Close,width-124,height-66,100,36);place(Status,24,height-24,width-48,20);
  InvalidateRect(window,nullptr,TRUE);
 }
@@ -52,7 +55,7 @@ void WorkflowEditor::refreshFlows(){
 void WorkflowEditor::loadFlow(int index){
  loading=true;flowIndex=index;draft={};if(auto* profile=findProfile(app.store,executable);profile&&index>=0&&index<static_cast<int>(profile->workflows.size()))draft=profile->workflows[index];else flowIndex=-1;
  SendMessageW(flows,LB_SETCURSEL,flowIndex,0);SetWindowTextW(title,draft.title.c_str());stepIndex=-1;SetWindowTextW(stepText,L"");refreshSteps();loading=false;dirty=pendingStep=false;
- SetWindowTextW(status,L"Reference only. Edit steps, then choose Save workflow to store your changes.");
+ SetWindowTextW(status,L"Markdown: headings, **bold**, *italic*, lists, `code`, links and attached images. Save workflow to keep changes.");
 }
 void WorkflowEditor::refreshSteps(){
  SendMessageW(steps,LB_RESETCONTENT,0,0);for(size_t i=0;i<draft.steps.size();++i){auto text=std::to_wstring(i+1)+L". "+summary(draft.steps[i]);SendMessageW(steps,LB_ADDSTRING,0,reinterpret_cast<LPARAM>(text.c_str()));}SendMessageW(steps,LB_SETCURSEL,stepIndex,0);
@@ -70,6 +73,14 @@ void WorkflowEditor::selectStep(int index){
 void WorkflowEditor::moveStep(int delta){
  if(!applyStep())return;int next=stepIndex+delta;if(stepIndex<0||next<0||next>=static_cast<int>(draft.steps.size()))return;
  std::swap(draft.steps[stepIndex],draft.steps[next]);stepIndex=next;dirty=true;refreshSteps();
+}
+void WorkflowEditor::attachImage(){
+ auto text=textOf(stepText);size_t count=0,at=0;while((at=text.find(L"](attachments/",at))!=text.npos){++count;at+=14;}if(count>=8){app.error(L"A step can display up to eight attached images.",window);return;}
+ wchar_t source[32768]{};OPENFILENAMEW dialog{};dialog.lStructSize=sizeof(dialog);dialog.hwndOwner=window;dialog.lpstrFilter=L"Images (PNG, JPEG, BMP, GIF)\0*.png;*.jpg;*.jpeg;*.bmp;*.gif\0All files\0*.*\0";dialog.lpstrFile=source;dialog.nMaxFile=32768;dialog.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
+ if(!GetOpenFileNameW(&dialog))return;std::wstring reference,error;if(!importWorkflowImage(source,app.file.parent_path(),reference,error)){app.error(error,window);return;}
+ auto markdown=L"\r\n\r\n![Step image]("+reference+L")\r\n";DWORD begin=0,end=0;SendMessageW(stepText,EM_GETSEL,reinterpret_cast<WPARAM>(&begin),reinterpret_cast<LPARAM>(&end));
+ if(textOf(stepText).size()-(end-begin)+markdown.size()>4096){app.error(L"The step text plus attachment reference exceeds 4096 characters. Shorten it first.",window);return;}
+ SendMessageW(stepText,EM_REPLACESEL,TRUE,reinterpret_cast<LPARAM>(markdown.c_str()));pendingStep=true;SetFocus(stepText);SetWindowTextW(status,L"Image attached locally. Choose Save workflow to keep the step and its image reference.");
 }
 void WorkflowEditor::save(){
  if(!applyStep())return;draft.title=textOf(title);if(!hasText(draft.title)||draft.title.size()>240||draft.steps.empty()){app.error(L"Enter a workflow title (up to 240 characters) and at least one step.",window);return;}
@@ -94,7 +105,8 @@ LRESULT CALLBACK WorkflowEditor::proc(HWND h,UINT msg,WPARAM w,LPARAM l){
  e->flows=control(h,L"LISTBOX",L"",LBS_NOTIFY|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_TABSTOP,FlowList);
  control(h,L"STATIC",L"Workflow title",0,TitleLabel);e->title=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,FlowTitle);SendMessageW(e->title,EM_SETLIMITTEXT,240,0);
  control(h,L"STATIC",L"Steps — select a step to read or edit it",0,StepsLabel);e->steps=control(h,L"LISTBOX",L"",LBS_NOTIFY|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_TABSTOP,StepList);
- control(h,L"STATIC",L"Step text",0,TextLabel);e->stepText=control(h,L"EDIT",L"",ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL|WS_TABSTOP,StepText);SendMessageW(e->stepText,EM_SETLIMITTEXT,4096,0);
+ control(h,L"STATIC",L"Step text (Markdown)",0,TextLabel);e->stepText=control(h,L"EDIT",L"",ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL|WS_TABSTOP,StepText);SendMessageW(e->stepText,EM_SETLIMITTEXT,4096,0);
+ control(h,L"BUTTON",L"Attach image...",WS_TABSTOP,AttachImage);
  const std::pair<int,const wchar_t*> buttons[]={{NewFlow,L"New workflow"},{SaveFlow,L"Save workflow"},{DeleteFlow,L"Delete workflow"},{NewStep,L"New step"},{ApplyStep,L"Apply step"},{DeleteStep,L"Remove step"},{StepUp,L"Move up"},{StepDown,L"Move down"},{Close,L"Close"}};for(auto [id,label]:buttons)control(h,L"BUTTON",label,WS_TABSTOP,id);
  e->status=control(h,L"STATIC",L"",0,Status);return 0;}
  case WM_SIZE:e->layout();return 0;
@@ -113,6 +125,7 @@ LRESULT CALLBACK WorkflowEditor::proc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case SaveFlow:e->save();break;case DeleteFlow:e->remove();break;
  case NewStep:if(e->applyStep()){e->loading=true;e->stepIndex=-1;SetWindowTextW(e->stepText,L"");e->loading=false;e->refreshSteps();SetFocus(e->stepText);}break;
  case ApplyStep:e->applyStep();break;
+ case AttachImage:e->attachImage();break;
  case DeleteStep:if(e->stepIndex>=0){e->draft.steps.erase(e->draft.steps.begin()+e->stepIndex);e->dirty=true;e->pendingStep=false;e->loading=true;e->stepIndex=-1;SetWindowTextW(e->stepText,L"");e->loading=false;e->refreshSteps();}break;
  case StepUp:e->moveStep(-1);break;case StepDown:e->moveStep(1);break;
  case Close:case IDCANCEL:e->close();break;

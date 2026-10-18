@@ -1,4 +1,5 @@
 #include "storage.hpp"
+#include "attachments.hpp"
 #include <commctrl.h>
 #include <psapi.h>
 #include <iostream>
@@ -22,12 +23,14 @@ void capture(HWND window,const std::filesystem::path& file){
 unsigned long long ticks(FILETIME time){ULARGE_INTEGER n{};n.LowPart=time.dwLowDateTime;n.HighPart=time.dwHighDateTime;return n.QuadPart;}
 }
 int wmain(int argc,wchar_t** argv){
+ struct Apartment{HRESULT result=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);~Apartment(){if(SUCCEEDED(result))CoUninitialize();}} apartment;
  if(argc!=2)return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
  try {
  auto appExe=std::filesystem::absolute(argv[1]);auto output=appExe.parent_path().parent_path()/L"qa";std::filesystem::create_directories(output);
  auto data=output/(L"preview-"+std::to_wstring(GetCurrentProcessId()));qc::Store s;s.trigger.modifiers=7;
  s.profiles.push_back({L"qc_integration.exe",L"Visual Studio Code (demo)",{{L"Save file",L"File",{MOD_CONTROL,'S'}},{L"Open file",L"File",{MOD_CONTROL,'O'}},{L"Find in file",L"Search",{MOD_CONTROL,'F'}},{L"Search across files",L"Search",{MOD_CONTROL|MOD_SHIFT,'F'}},{L"Command palette",L"Navigation",{MOD_CONTROL|MOD_SHIFT,'P'}},{L"Go to file",L"Navigation",{MOD_CONTROL,'P'}},{L"Toggle sidebar",L"View",{MOD_CONTROL,'B'}}}});
  s.profiles.back().workflows={{L"Prepare a change for review",{L"Open the project folder and check the current branch.",L"Review the modified files in Source Control. Keep each change focused on one task.",L"Read the diff, write a clear commit message, and commit the change."}},{L"Find a symbol in the project",{L"Open the command palette.",L"Choose the symbol search command and type the name you want to find.",L"Select a result and review its surrounding code."}}};
+ std::wstring demoImage,imageError;auto demoSource=appExe.parent_path().parent_path()/L"demo-markdown"/L"prompt-guide.png";if(std::filesystem::exists(demoSource)&&qc::importWorkflowImage(demoSource,data,demoImage,imageError))s.profiles.back().workflows[0].steps[0]=L"## Write a clear prompt\n\nDefine the **goal**, add *context*, then choose the format.\n\n- Keep the facts\n- Use three short bullets\n\n![Prompt anatomy]("+demoImage+L")\n\nUse `Ctrl+A` to select your draft. [Markdown guide](https://commonmark.org/help/).";
  std::wstring error;if(!qc::saveStore(data/L"shortcuts.qc",s,error))throw std::runtime_error("Cannot save preview data");
  Child app,target;app.start(L"\""+appExe.wstring()+L"\" --data-dir \""+data.wstring()+L"\"");auto host=waitWindow(L"QuickCheatHost");pause(400);
  PROCESS_MEMORY_COUNTERS_EX memory{};memory.cb=sizeof(memory);GetProcessMemoryInfo(app.pi.hProcess,reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memory),sizeof(memory));

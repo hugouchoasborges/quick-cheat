@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "markdown_view.hpp"
 #include <algorithm>
 namespace qc {
 namespace {
@@ -98,7 +99,7 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case WM_SIZE:app->layoutPopup();return 0;
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);app->layoutPopup();return 0;}
  case WM_DRAWITEM:app->theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l));return TRUE;
- case WM_NOTIFY:{auto* notice=reinterpret_cast<NMHDR*>(l);if(notice->hwndFrom==app->workflowTree&&notice->code==TVN_SELCHANGEDW)app->selectWorkflowStep();
+ case WM_NOTIFY:{auto* notice=reinterpret_cast<NMHDR*>(l);if(notice->hwndFrom==app->workflowDetail&&notice->code==EN_LINK)return handleMarkdownLink(reinterpret_cast<ENLINK*>(l))?1:0;if(notice->hwndFrom==app->workflowTree&&notice->code==TVN_SELCHANGEDW)app->selectWorkflowStep();
  if(notice->hwndFrom==app->rows){if(notice->code==NM_CUSTOMDRAW){auto* draw=reinterpret_cast<NMLVCUSTOMDRAW*>(l);if(draw->nmcd.dwDrawStage==CDDS_PREPAINT)return CDRF_NOTIFYITEMDRAW;if(draw->nmcd.dwDrawStage==CDDS_ITEMPREPAINT&&draw->dwItemType==LVCDI_ITEM){DRAWITEMSTRUCT item{};item.itemID=static_cast<UINT>(draw->nmcd.dwItemSpec);item.hDC=draw->nmcd.hdc;ListView_GetItemRect(app->rows,item.itemID,&item.rcItem,LVIR_BOUNDS);if(ListView_GetItemState(app->rows,item.itemID,LVIS_SELECTED))item.itemState=ODS_SELECTED;app->drawRow(&item);return CDRF_SKIPDEFAULT;}return CDRF_DODEFAULT;}
  if(notice->code==LVN_ITEMCHANGED&&!app->updatingPopup)app->updateShortcutDetail();
  if(notice->code==NM_DBLCLK){int index=reinterpret_cast<NMITEMACTIVATE*>(l)->iItem;bool valid=index>=0&&index==app->pressedRow&&app->pressedWindow==app->target.window&&app->pressedProcess==app->target.process;app->pressedRow=-1;if(valid)app->execute(static_cast<size_t>(index));}}

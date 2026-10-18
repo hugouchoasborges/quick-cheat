@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "workflows.hpp"
+#include "markdown_view.hpp"
 #include <shellapi.h>
 #include <objbase.h>
 #include <roapi.h>
@@ -73,7 +74,7 @@ void App::togglePopup() {
  positionPopup(true);
  layoutPopup();SetForegroundWindow(popup);SetFocus(search);
 }
-void App::hidePopup(bool restore){if(!popup)return;bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
+void App::hidePopup(bool restore){if(!popup)return;bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(workflowDetail)clearMarkdown(workflowDetail);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
 void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);}
 void App::execute(size_t index) {
  if(workflowsVisible)return;
@@ -112,7 +113,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  HANDLE singleton=CreateMutexW(nullptr,FALSE,L"Local\\QuickCheat.Desktop");if(!singleton)return 1;
  if(GetLastError()==ERROR_ALREADY_EXISTS){MessageBoxW(nullptr,L"Quick Cheat is already running in the system tray.",L"Quick Cheat",MB_OK);CloseHandle(singleton);return 0;}
  INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_LISTVIEW_CLASSES|ICC_TREEVIEW_CLASSES};InitCommonControlsEx(&controls);HRESULT apartment=RoInitialize(RO_INIT_SINGLETHREADED);
- int result=0;
+ HRESULT ole=OleInitialize(nullptr);int result=0;
  try { qc::App app;int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);
  if(argv){if(argc==3&&wcscmp(argv[1],L"--data-dir")==0)app.file=std::filesystem::path(argv[2])/L"shortcuts.qc";LocalFree(argv);}
  if(!app.start(instance))result=1;else {MSG message{};BOOL status=0;while((status=GetMessageW(&message,nullptr,0,0))>0) {
@@ -122,5 +123,5 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  TranslateMessage(&message);DispatchMessageW(&message);
  }if(status<0)result=1;}}
  catch(const std::exception&){MessageBoxW(nullptr,L"Quick Cheat could not continue. Saved shortcuts were not changed.",L"Quick Cheat",MB_OK|MB_ICONERROR);result=1;}
- if(SUCCEEDED(apartment))RoUninitialize();CloseHandle(singleton);return result;
+ if(SUCCEEDED(ole))OleUninitialize();if(SUCCEEDED(apartment))RoUninitialize();CloseHandle(singleton);return result;
 }
