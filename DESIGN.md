@@ -5,7 +5,7 @@ Application mark: an original lavender keyboard key with a geometric Q on a char
 
 - Compact charcoal or warm-white surfaces, thin separators, restrained rounded selections and keycaps. System defaults to Windows app color preference and updates through documented UISettings color-change events. Explicit Dark/Light remain pinned.
 - Search is the popup's first visual/focus anchor. The application name remains visible as context. Categories are quiet group headings; command descriptions and right-aligned keycaps form compact scan lines.
-- Selected and hovered rows have distinct tonal fills; accent is used for the primary Execute/Save actions and keyboard focus. Clicking a row only selects it. Execute is an actual native button, disabled without a selection.
+- Selected and hovered rows have distinct tonal fills; accent is used for the primary Execute/Save actions and keyboard focus. A single click selects a row; double-clicking executes it. Execute is an actual native button, disabled without a selection.
 - Footer keeps visible Execute and Manage controls. Native keyboard navigation and Escape are supported; Enter invokes the explicit primary action, not selection.
 - Editor uses the same colors, typography, borders, field treatment and action hierarchy. Theme selector exposes System, Light, Dark in English and persists immediately.
 - Segoe UI uses installed Windows fonts, with 12–18px hierarchy at 96 DPI. Layout scales by monitor DPI. Draw only on input/invalidation; no animation loops, blur, custom font assets or bitmap backgrounds.
