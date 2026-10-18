@@ -30,10 +30,10 @@ void App::layoutWorkflowPopup(){
  if(workflowsVisible&&!workflowDetail){workflowDetail=createMarkdownView(popup,Detail);if(workflowDetail){SendMessageW(workflowDetail,WM_SETFONT,reinterpret_cast<WPARAM>(font),TRUE);SetWindowSubclass(workflowDetail,treeProc,1,reinterpret_cast<DWORD_PTR>(this));}}
  UINT dpi=GetDpiForWindow(popup);RECT r;GetClientRect(popup,&r);int width=MulDiv(r.right,96,dpi),height=MulDiv(r.bottom,96,dpi);
  ShowWindow(GetDlgItem(popup,CmdShortcuts),hasFlows?SW_SHOWNA:SW_HIDE);ShowWindow(GetDlgItem(popup,CmdWorkflows),hasFlows?SW_SHOWNA:SW_HIDE);
- bounds(GetDlgItem(popup,CmdShortcuts),16,76,112,28,dpi);bounds(GetDlgItem(popup,CmdWorkflows),136,76,112,28,dpi);
- bounds(rows,8,hasFlows?112:78,width-16,height-(hasFlows?180:146),dpi);
- int contentHeight=(std::max)(height-184,120);if(width>=960){int treeWidth=(width-48)*42/100;bounds(workflowTree,16,112,treeWidth,contentHeight,dpi);bounds(workflowDetail,32+treeWidth,112,width-48-treeWidth,contentHeight,dpi);}
- else{int treeHeight=contentHeight*55/100;bounds(workflowTree,16,112,width-32,treeHeight,dpi);bounds(workflowDetail,16,124+treeHeight,width-32,contentHeight-treeHeight-12,dpi);}
+ bounds(GetDlgItem(popup,CmdShortcuts),16,116,112,28,dpi);bounds(GetDlgItem(popup,CmdWorkflows),136,116,112,28,dpi);
+ bounds(rows,8,hasFlows?152:118,width-16,height-(hasFlows?220:186),dpi);
+ int contentHeight=(std::max)(height-224,120);if(width>=960){int treeWidth=(width-48)*42/100;bounds(workflowTree,16,152,treeWidth,contentHeight,dpi);bounds(workflowDetail,32+treeWidth,152,width-48-treeWidth,contentHeight,dpi);}
+ else{int treeHeight=contentHeight*55/100;bounds(workflowTree,16,152,width-32,treeHeight,dpi);bounds(workflowDetail,16,164+treeHeight,width-32,contentHeight-treeHeight-12,dpi);}
  TreeView_SetItemHeight(workflowTree,MulDiv(30,dpi,96));TreeView_SetIndent(workflowTree,MulDiv(20,dpi,96));
  ShowWindow(workflowTree,workflowsVisible?SW_SHOWNA:SW_HIDE);ShowWindow(workflowDetail,workflowsVisible?SW_SHOWNA:SW_HIDE);
  if(!workflowsVisible&&workflowDetail)clearMarkdown(workflowDetail);

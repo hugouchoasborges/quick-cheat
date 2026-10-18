@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0-alpha.5 — 2026-10-18
+
+Larger, centered active-application title in the popup header, with search on its own line. Native DPI-scaled pin and red close icons replace button text; pin state keeps its accent highlight and accessible names/tooltips remain available. High Contrast uses system colors. Close remains visible only while pinned. Shortcut and workflow layouts accommodate the taller header. Data format and popup behavior are unchanged. Release compilation and isolated dark/light captures completed; no tests added or run. Candidate awaiting acceptance.
+
 ## 0.2.0-alpha.4 — 2026-10-18
 
 Workflow steps support rendered basic Markdown and local images. Native Rich Edit displays headings, emphasis, lists, checklists, quotes, code, links and attached images in the popup. The editor adds Attach image... for PNG/JPEG/BMP/GIF, storing normalized PNG copies in the local attachments folder. No browser runtime, remote-image downloads or HTML execution. Text storage remains schema v3; full backups must include attachments.
