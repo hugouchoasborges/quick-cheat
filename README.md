@@ -14,7 +14,7 @@ Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additiona
 
 ## A shortcut library for each app
 
-![Quick Cheat popup in dark mode](docs/images/popup-dark.png)
+![Quick Cheat popup in dark mode](docs/images/v0.3.0-alpha.2/popup-dark.png)
 
 - Open a searchable popup for the current application.
 - Organize shortcuts into collapsible categories, remembered for each app.
@@ -26,11 +26,11 @@ Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additiona
 
 ### Light theme
 
-![Quick Cheat popup in light mode](docs/images/popup-light.png)
+![Quick Cheat popup in light mode](docs/images/v0.3.0-alpha.2/popup-light.png)
 
 ### Manage your shortcuts
 
-![Quick Cheat shortcut library](docs/images/editor-dark.png)
+![Quick Cheat shortcut library](docs/images/v0.3.0-alpha.2/editor-dark.png)
 
 Screenshots were captured from the released app using isolated, fictional demo data. Sample shortcuts and diagrams are illustrative; applications do not come with preloaded profiles. Personal profiles and images are not included in the download.
 
@@ -51,7 +51,7 @@ Use the **gear** to the left of PIN, or open **Settings...** from the tray menu.
 - **Shortcuts:** choose an application, organize categories, and add, edit or record shortcuts.
 - **Workflows:** choose an application and manage its guides, ordered steps, Markdown and attached images in the same window.
 
-![General settings in dark mode](docs/images/settings-general-dark.png)
+![General settings in dark mode](docs/images/v0.3.0-alpha.2/settings-general-dark.png)
 
 The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Use the gear beside PIN to open Settings in the same main window. Back returns to the library after confirming pending edits. Escape and unpinned focus loss hide the window while retaining the draft.
 
@@ -61,7 +61,7 @@ Share an application's shortcuts and workflows as a single `.quickcheat.json` fi
 
 Choose **Add** to keep existing content and skip exact duplicates, or **Replace** to replace that application's content after confirmation. Other applications and global settings stay unchanged. Each application still has one active profile.
 
-![Portable collections in dark settings](docs/images/collections-settings-dark.png)
+![Portable collections in dark settings](docs/images/v0.3.0-alpha.2/editor-dark.png)
 
 See the [format and limits](docs/collection-format.md) and [acceptance checklist](docs/validation-0.3.0-alpha.1.md). This release adds local file sharing; community browsing and voting remain planned.
 
@@ -87,7 +87,7 @@ Write step explanations in Markdown: headings, **bold**, *italic*, lists, checkl
 
 Images stay in `%LOCALAPPDATA%\QuickCheat\attachments`. Back up the entire data folder to preserve them; the `.qc` backup alone contains only text and image references. Removing a reference does not delete the image file. Imports accept up to 10 MiB and 24 megapixels, normalize to PNG up to 1600×1600 and 4 MiB, and display at most eight images per step. Steps retain the 4096-character limit. Remote images, HTML execution, tables and math rendering are not supported. Web links open only when clicked. The reader uses native Windows Rich Edit; no browser runtime is needed.
 
-![Expandable workflow guides in the popup](docs/images/workflow-popup-dark.png)
+![Expandable workflow guides in the popup](docs/images/v0.3.0-alpha.2/workflow-popup-dark.png)
 
 The popup opens larger and fits the current monitor. Drag its edges to resize, drag the header to move it, or use **Expand / Restore**. Your preferred size is kept until the app exits. **PIN** is off by default: losing focus hides the popup while the tray app keeps running. Turn it on to keep the popup open; **Close** appears beside PIN. With PIN on, executing shortcuts or pressing the activation hotkey keeps the popup open. Press Escape while the popup is focused, or click Close, to hide it. PIN is remembered only for the current session. Clicking Quick Cheat retains the last valid external application context.
 
@@ -97,11 +97,11 @@ The active application's name is larger and centered above search. Use the pin i
 
 Shortcuts appear under category headers with a divider. Click a header to collapse or expand its cards. Quick Cheat remembers each category's state for each application across restarts. New categories start expanded; uncategorized shortcuts appear under **General**. Search reveals matching shortcuts without changing saved expansion preferences. With a category header focused, use Left/Right to collapse/expand or Space to toggle.
 
-![Local workflow editor](docs/images/workflow-editor-dark.png)
+![Local workflow editor](docs/images/v0.3.0-alpha.2/workflow-editor-dark.png)
 
 Select a workflow's name in the popup to read all its steps in order, with numbered headings and a divider between steps. Select an individual step to focus on it. Markdown and local images remain available in both views. The complete view previews up to eight images to keep memory bounded; select a step to see its own images if the preview limit is reached.
 
-![Complete workflow in the popup](docs/images/workflow-overview-dark.png)
+![Complete workflow in the popup](docs/images/v0.3.0-alpha.2/workflow-overview-dark.png)
 
 ### Upgrading from 0.1.x
 
