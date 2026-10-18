@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 namespace qc {
+inline constexpr size_t maxStoreBytes=8*1024*1024;
 struct Chord { UINT modifiers{}; WORD key{}; };
 struct Shortcut { std::wstring title, category; Chord chord; };
 struct Profile { std::wstring executable, name; std::vector<Shortcut> shortcuts; };

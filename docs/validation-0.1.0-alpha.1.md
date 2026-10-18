@@ -4,6 +4,7 @@ Development host: Windows build 26300, x64; Visual Studio 2022/MSVC 19.38 and Wi
 
 - Core test RED: parser stub failed the expected Ctrl+Shift+S assertion before implementation.
 - Core test GREEN: valid/invalid chords, filename normalization, Unicode/escape roundtrip, unsupported schemas, truncated/trailing corruption rejection, durable save and previous-save backup.
+- Review found mismatched read/write size limits. A failing regression reproduced it; a shared 8 MiB UTF-8 limit now permits a 16,000-shortcut ASCII store to save/reload and rejects oversized multibyte data without replacing the previous file. The regression passes.
 - Release build completed without compiler warnings in the final build.
 - Controlled desktop integration passed: WM_HOTKEY dispatch, empty popup, native editor save, non-activating popup, actual F6 delivered through SendInput on click, foreground change, restart persistence and clean shutdown. Tests use isolated data and terminate only their own child processes.
 - Actual Ctrl+Alt+Space registration was occupied on this machine. First-run fallback to Ctrl+Alt+Shift+Space added; configured conflicts are reported without a blocking startup dialog. Automated physical-input activation was inconsistent in this desktop environment, so the repeatable integration test dispatches WM_HOTKEY. Physical-key activation remains a manual acceptance check.

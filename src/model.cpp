@@ -80,7 +80,8 @@ std::wstring serialize(const Store& s) {
  }out<<L"Z\n";return out.str();
 }
 bool deserialize(const std::wstring& data,Store& target) {
- if(data.size()>4*1024*1024||data.find(L'\0')!=data.npos)return false;
+ // Valid UTF-8 never decodes into more UTF-16 units than its byte count.
+ if(data.size()>maxStoreBytes||data.find(L'\0')!=data.npos)return false;
  auto lines=split(data,L'\n');if(lines.size()<4||lines[0]!=L"QC\t1"||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
  Store s;auto header=split(lines[1],L'\t');UINT key=0;
  if(header.size()!=3||header[0]!=L"H"||!number(header[1],s.trigger.modifiers)||!number(header[2],key))return false;s.trigger.key=static_cast<WORD>(key);

@@ -15,7 +15,7 @@ bool loadStore(const std::filesystem::path& file,Store& store,std::wstring& erro
  error.clear();Handle h{CreateFileW(file.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr)};
  if(h.value==INVALID_HANDLE_VALUE) { if(GetLastError()==ERROR_FILE_NOT_FOUND||GetLastError()==ERROR_PATH_NOT_FOUND){store=Store{};return true;}return fail(error,L"Cannot open shortcut file"); }
  LARGE_INTEGER size;if(!GetFileSizeEx(h.value,&size))return fail(error,L"Cannot read file size");
- if(size.QuadPart<=0||size.QuadPart>8*1024*1024) {error=L"The shortcut file is empty or exceeds the size limit.";return false;}
+ if(size.QuadPart<=0||static_cast<unsigned long long>(size.QuadPart)>maxStoreBytes) {error=L"The shortcut file is empty or exceeds the size limit.";return false;}
  std::string bytes(static_cast<size_t>(size.QuadPart),'\0');DWORD read=0;
  if(!ReadFile(h.value,bytes.data(),static_cast<DWORD>(bytes.size()),&read,nullptr)||read!=bytes.size())return fail(error,L"Cannot read shortcut file");
  int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,bytes.data(),static_cast<int>(bytes.size()),nullptr,0);
@@ -27,7 +27,7 @@ bool loadStore(const std::filesystem::path& file,Store& store,std::wstring& erro
 bool saveStore(const std::filesystem::path& file,const Store& store,std::wstring& error) {
  error.clear();if(!validStore(store)){error=L"Invalid shortcut data or size limit reached.";return false;}
  const auto text=serialize(store);int n=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text.data(),static_cast<int>(text.size()),nullptr,0,nullptr,nullptr);
- if(n<=0||n>8*1024*1024){error=L"Cannot encode shortcut data.";return false;}
+ if(n<=0||static_cast<size_t>(n)>maxStoreBytes){error=L"Cannot encode shortcut data or the 8 MiB file size limit was exceeded.";return false;}
  std::string bytes(n,'\0');WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text.data(),static_cast<int>(text.size()),bytes.data(),n,nullptr,nullptr);
  std::error_code ec;std::filesystem::create_directories(file.parent_path(),ec);if(ec){error=L"Cannot create the data directory.";return false;}
  const auto temp=file.wstring()+L".tmp."+std::to_wstring(GetCurrentProcessId());
