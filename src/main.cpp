@@ -24,7 +24,7 @@ bool App::start(HINSTANCE value) {
  if(file.empty())file=dataPath();std::wstring message;
  if(file.empty()){error(L"Cannot locate your local application data folder.");return false;}
  if(!loadStore(file,store,message)){error(message+L"\n\n"+file.wstring());return false;}
- WNDCLASSW cls{};cls.hInstance=instance;cls.lpfnWndProc=hostProc;cls.lpszClassName=L"QuickCheatHost";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);RegisterClassW(&cls);
+ WNDCLASSW cls{};cls.hInstance=instance;cls.lpfnWndProc=hostProc;cls.lpszClassName=L"QuickCheatHost";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));RegisterClassW(&cls);
  host=CreateWindowExW(WS_EX_TOOLWINDOW,cls.lpszClassName,L"Quick Cheat",WS_OVERLAPPED,0,0,0,0,nullptr,nullptr,instance,this);if(!host)return false;
  taskbarCreated=RegisterWindowMessageW(L"TaskbarCreated");
  theme.observe(host);applyTheme();
