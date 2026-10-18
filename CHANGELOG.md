@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0-alpha.1 — 2026-10-18
+
+Candidate: contextual native Dock with ordered shortcuts, horizontal/vertical layout, grip dragging, collapse, scale and opacity. Settings adds a Dock tab with explicit Apply and pending-edit guards. Dock clicks retain application focus, and foreground changes hide irrelevant docks.
+
+Native website recognition for Edge and Chrome uses bounded asynchronous Windows UI Automation, without extensions, clipboard access, network or polling. Per-hostname profiles contribute separate shortcut categories and workflow groups alongside browser content. Site execution confirms the current hostname before sending input. Ambiguous or unavailable addresses fall back to browser-only content. Firefox/Android are deferred.
+
+Store schema v4 reads v1–v3 and preserves a pre-v4 backup before migration. Collection format 2 includes website/dock, accepts format 1 and remaps dock indices on Add. Release build, independent inspection and isolated demo captures completed. No automated tests added or run; live browser and dock manual acceptance pending.
+
+
 ## 0.3.0-alpha.2 — 2026-10-18
 
 Public prerelease, manually accepted by Hugo on 2026-10-18. Includes portable collections from alpha.1 below. Settings now opens inside the main window. An authored gear icon to the left of PIN replaces Manage shortcuts/workflows. Back returns to the library with the existing unsaved-edit confirmation. General, Shortcuts and Workflows reuse the native editor as a child panel, including import/export. Escape and unpinned focus loss hide to tray and preserve drafts; exiting still checks pending edits while hidden. Native scrolling and keyboard focus reveal support smaller windows. No schema change or new dependency. Manual acceptance completed; no tests added or run.

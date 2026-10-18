@@ -1,11 +1,14 @@
 #include "app.hpp"
 #include "settings.hpp"
 #include "workflows.hpp"
+#include "dock.hpp"
+#include "browser_context.hpp"
 #include <algorithm>
 #include <initializer_list>
 namespace qc {
 using namespace settings;
 bool Editor::pendingPageEdits() const{
+ if(page==3)return dockSettings&&dockSettings->pending();
  if(page==2)return app.workflowEditor&&(app.workflowEditor->dirty||app.workflowEditor->pendingStep);
  if(page==0)return textOf(trigger)!=formatChord(draft.trigger);
  auto description=textOf(title),group=textOf(category),combination=textOf(keys);
@@ -13,6 +16,7 @@ bool Editor::pendingPageEdits() const{
  return !description.empty()||!combination.empty();
 }
 bool Editor::leavePage(){
+ if(page==3&&dockSettings&&!dockSettings->discard())return false;
  if(page==2&&app.workflowEditor&&(app.workflowEditor->dirty||app.workflowEditor->pendingStep)){if(!app.workflowEditor->discard())return false;app.workflowEditor->loadFlow(app.workflowEditor->flowIndex);}
  if(page==1){
   if(pendingPageEdits()&&MessageBoxW(window,L"Discard unsaved shortcut changes?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return false;clearFields();
@@ -21,14 +25,15 @@ bool Editor::leavePage(){
  return true;
 }
 bool Editor::updateWorkflowPage(){
- if(page!=2||profileIndex<0)return true;const auto& key=draft.profiles[profileIndex].executable;
- auto saved=std::find_if(app.store.profiles.begin(),app.store.profiles.end(),[&](const auto& profile){return profile.executable==key;});if(saved==app.store.profiles.end()&&!persist())return false;
+ if((page!=2&&page!=3)||profileIndex<0)return true;auto key=profileKey(draft.profiles[profileIndex]);
+ if(!findProfile(app.store,key)&&!persist())return false;
+ if(page==3){if(!dockSettings)dockSettings=std::make_unique<DockSettings>(app,window);return dockSettings->show(key);}
  if(!app.workflowEditor)app.workflowEditor=std::make_unique<WorkflowEditor>(app);return app.workflowEditor->show(key,window);
 }
 bool Editor::selectPage(int next){
- if(next<0||next>2)return false;if(next==page){if(!updateWorkflowPage())return false;layout();return true;}
+ if(next<0||next>3)return false;if(next==page){if(!updateWorkflowPage())return false;layout();return true;}
  if(!leavePage())return false;int previous=page;page=next;if(!updateWorkflowPage()){page=previous;layout();return false;}
- layout();SetFocus(GetDlgItem(window,TabGeneral+page));return true;
+ layout();SetFocus(GetDlgItem(window,tabId(page)));return true;
 }
 bool Editor::selectProfile(int next){
  if(next==profileIndex)return true;if(next<0||next>=static_cast<int>(draft.profiles.size())||!leavePage()){SendMessageW(profiles,CB_SETCURSEL,profileIndex,0);return false;}
@@ -36,7 +41,7 @@ bool Editor::selectProfile(int next){
  refreshList();layout();return true;
 }
 void Editor::openWorkflows(const std::wstring& key){
- auto found=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const auto& profile){return profile.executable==key;});if(found==draft.profiles.end()){app.error(L"Choose an application profile first.",window);return;}
+ auto found=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const auto& profile){return profileKey(profile)==key;});if(found==draft.profiles.end()){app.error(L"Choose an application profile first.",window);return;}
  int index=static_cast<int>(found-draft.profiles.begin());if(selectProfile(index)){SendMessageW(profiles,CB_SETCURSEL,index,0);selectPage(2);}
 }
 void Editor::close(){app.hidePopup();}
@@ -53,19 +58,19 @@ void Editor::layout(){
  if(font)DeleteObject(font);if(headingFont)DeleteObject(headingFont);if(captionFont)DeleteObject(captionFont);font=next;headingFont=nextHeading;captionFont=nextCaption;
  auto place=[&](int id,int x,int y,int w,int h){bounds(GetDlgItem(window,id),x-scrollX,y-66-scrollY,w,h,dpi);};auto visible=[&](int id,bool show){ShowWindow(GetDlgItem(window,id),show?SW_SHOWNA:SW_HIDE);};
  visible(PageTitle,false);visible(PageSubtitle,false);
- for(int id:std::initializer_list<int>{LabelTheme,ThemeSelect,LabelTrigger,Trigger,Apply,ThemeHelp,TriggerHelp,DataLabel,DataPath,DataHelp,OpenData})visible(id,page==0);
- for(int id:std::initializer_list<int>{LabelApp,Profiles,Browse,ImportCollection,ExportCollection})visible(id,page!=0);
+ for(int id:std::initializer_list<int>{LabelTheme,ThemeSelect,LabelTrigger,Trigger,Apply,ThemeHelp,TriggerHelp,DataLabel,DataPath,DataHelp,OpenData,BrowserHelp})visible(id,page==0);
+ for(int id:std::initializer_list<int>{LabelApp,Profiles,Browse,ImportCollection,ExportCollection,Website})visible(id,page!=0);
  for(int id:std::initializer_list<int>{Entries,FormTitle,LabelTitle,Title,LabelCategory,Category,LabelKeys,Keys,Record,Save,New,Delete,RemoveProfile})visible(id,page==1);
- visible(Status,page!=2);visible(EmptyFlows,page==2&&profileIndex<0);
+ visible(Status,page!=2&&page!=3);visible(EmptyFlows,(page==2||page==3)&&profileIndex<0);
  SetWindowTextW(GetDlgItem(window,PageSubtitle),page==0?L"Make Quick Cheat feel at home.":page==1?L"Organize the keyboard shortcuts you use in each application.":L"Build reusable step-by-step reference guides for each application.");
  for(int id:std::initializer_list<int>{Title,Category,Keys,Record,Save,New,Delete,RemoveProfile})EnableWindow(GetDlgItem(window,id),profileIndex>=0);
  updateCollectionActions();
  place(PageTitle,28,22,width-56,36);place(PageSubtitle,30,65,width-60,22);
- for(int i=0;i<3;++i){auto tab=GetDlgItem(window,TabGeneral+i);SetPropW(tab,L"QcSelected",reinterpret_cast<HANDLE>(page==i));place(TabGeneral+i,28+i*144,108,136,34);}
+ for(int i=0;i<4;++i){auto tab=GetDlgItem(window,tabId(i));SetPropW(tab,L"QcSelected",reinterpret_cast<HANDLE>(page==i));place(tabId(i),28+i*144,108,136,34);}
  place(LabelTheme,40,190,280,22);place(ThemeHelp,40,218,360,36);place(ThemeSelect,480,194,220,180);
  place(LabelTrigger,40,296,320,22);place(TriggerHelp,40,324,360,40);place(Trigger,484,300,204,28);place(Apply,704,296,92,36);
  place(DataLabel,40,408,280,22);place(DataPath,40,438,width-300,28);place(DataHelp,40,476,width-80,36);place(OpenData,width-220,430,176,36);
- place(LabelApp,28,178,200,20);place(Profiles,28,204,width-576,300);place(Browse,width-520,200,160,34);place(ImportCollection,width-352,200,160,34);place(ExportCollection,width-184,200,156,34);
+ place(LabelApp,28,178,width-240,20);place(Website,width-184,158,156,30);EnableWindow(GetDlgItem(window,Website),profileIndex>=0&&NativeBrowserContext::supported(draft.profiles[profileIndex].executable));place(BrowserHelp,40,550,width-80,60);place(Profiles,28,204,width-576,300);place(Browse,width-520,200,160,34);place(ImportCollection,width-352,200,160,34);place(ExportCollection,width-184,200,156,34);
  int left=width-420,right=width-348,fieldWidth=320;
  place(Entries,28,278,left,height-376);place(FormTitle,right,272,fieldWidth,26);
  place(LabelTitle,right,316,fieldWidth,20);place(Title,right+4,344,fieldWidth-8,28);
@@ -74,6 +79,7 @@ void Editor::layout(){
  place(Save,right,550,fieldWidth,38);place(New,right,602,(fieldWidth-12)/2,32);place(Delete,right+(fieldWidth+12)/2,602,(fieldWidth-12)/2,32);
  place(RemoveProfile,28,height-80,176,30);place(Status,28,height-30,width-56,22);place(EmptyFlows,48,304,width-96,80);
  if(app.workflowEditor&&app.workflowEditor->window){bounds(app.workflowEditor->window,-scrollX,186-scrollY,width,height-260,dpi);ShowWindow(app.workflowEditor->window,page==2&&profileIndex>=0?SW_SHOWNA:SW_HIDE);}
+ if(dockSettings){if(page==3&&profileIndex>=0)dockSettings->layout(MulDiv(28-scrollX,dpi,96),MulDiv(186-scrollY,dpi,96),MulDiv(width-56,dpi,96),MulDiv(height-260,dpi,96),dpi);else dockSettings->hide();}
  ListView_SetColumnWidth(list,0,MulDiv(left*48/100,dpi,96));ListView_SetColumnWidth(list,1,MulDiv(left*24/100,dpi,96));ListView_SetColumnWidth(list,2,MulDiv(left*27/100,dpi,96));RedrawWindow(window,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
 }
 void Editor::paint(){
