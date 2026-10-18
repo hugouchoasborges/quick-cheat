@@ -2,7 +2,9 @@
 
 ## 0.2.0-alpha.8 — 2026-10-18
 
-Selecting a workflow parent displays every step in order in the existing Markdown reader, with the workflow title, numbered step headings and horizontal separators. Selecting a child still displays only that step. Each step is parsed independently so unfinished Markdown cannot affect later sections. The reader accommodates the maximum stored workflow text, retains absolute link offsets and preserves its eight-image preview budget with a message directing users to individual steps for further images. No data migration. Release compilation, independent inspection and isolated dark/light captures completed; no tests added or run. Candidate awaiting acceptance.
+Public prerelease, manually accepted by Hugo on 2026-10-18. Includes the local workflow, Markdown/image, PIN, collapsible-category and tabbed-settings improvements from the earlier 0.2 candidates below. README and screenshots refreshed using isolated demo data. Windows x64 ZIP includes the executable, documentation and third-party license notices, with SHA-256 checksums.
+
+Selecting a workflow parent displays every step in order in the existing Markdown reader, with the workflow title, numbered step headings and horizontal separators. Selecting a child still displays only that step. Each step is parsed independently so unfinished Markdown cannot affect later sections. The reader accommodates the maximum stored workflow text, retains absolute link offsets and preserves its eight-image preview budget with a message directing users to individual steps for further images. Existing v3 data needs no migration. Release compilation, independent inspection and isolated dark/light captures completed; no tests added or run. Manual acceptance completed; published as a prerelease.
 
 ## 0.2.0-alpha.7 — 2026-10-18
 

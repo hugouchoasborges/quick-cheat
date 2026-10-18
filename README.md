@@ -2,13 +2,13 @@
 
 Remember less. Keep your keyboard shortcuts close.
 
-Quick Cheat is a small Windows app that shows the shortcuts you saved for the application you are using. Search by name, category or keys, then run a shortcut without leaving your workflow.
+Quick Cheat is a small Windows app that keeps keyboard shortcuts and step-by-step guides close to the application you are using. Find a shortcut, run it deliberately, or follow a workflow with Markdown explanations and images.
 
 Built with C++ and native Windows controls, with a focus on speed and low memory use. Everything stays on your computer. No accounts, telemetry or internet connection required.
 
 ## Download
 
-[Download Quick Cheat for Windows x64](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.1.0-alpha.4)
+[Download Quick Cheat for Windows x64 — v0.2.0-alpha.8](https://github.com/hugouchoasborges/quick-cheat/releases/tag/v0.2.0-alpha.8)
 
 Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additional runtime is needed. This is an early alpha release.
 
@@ -17,10 +17,12 @@ Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additiona
 ![Quick Cheat popup in dark mode](docs/images/popup-dark.png)
 
 - Open a searchable popup for the current application.
-- Organize your shortcuts into categories.
+- Organize shortcuts into collapsible categories, remembered for each app.
 - Click once to select; double-click, press Enter or click **Execute** to run.
 - Add, edit and record shortcuts in the local library.
 - Choose **System**, **Light** or **Dark** appearance.
+- Pin the popup to keep it open, or let it hide when it loses focus.
+- Keep local workflows with ordered steps, Markdown and image attachments.
 
 ### Light theme
 
@@ -30,7 +32,7 @@ Download the ZIP, extract it and run `QuickCheat.exe`. No installer or additiona
 
 ![Quick Cheat shortcut library](docs/images/editor-dark.png)
 
-Screenshots use isolated demo data. The sample shortcuts are illustrative; applications do not come with preloaded profiles.
+Screenshots were captured from the released app using isolated, fictional demo data. Sample shortcuts and diagrams are illustrative; applications do not come with preloaded profiles. Personal profiles and images are not included in the download.
 
 ## Getting started
 
@@ -67,9 +69,9 @@ Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline;
 
 Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
 
-## Workflows — 0.2.0-alpha.8 candidate
+## Workflows
 
-The development build adds local step-by-step guides for each application. Open **Settings → Workflows** and choose an application, or use **Manage workflows** in the popup. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
+Create local step-by-step guides for each application. Open **Settings → Workflows** and choose an application, or use **Manage workflows** in the popup. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
 Write step explanations in Markdown: headings, **bold**, *italic*, lists, checklists, quotes, code and links render in the popup. Click **Attach image...** in the step editor to copy a PNG, JPEG, BMP or GIF into your local library and insert its Markdown reference. Save the workflow, then select the step in the popup to see the formatted explanation and image. GIFs use the first frame.
 
@@ -79,7 +81,7 @@ Images stay in `%LOCALAPPDATA%\QuickCheat\attachments`. Back up the entire data 
 
 The popup opens larger and fits the current monitor. Drag its edges to resize, drag the header to move it, or use **Expand / Restore**. Your preferred size is kept until the app exits. **PIN** is off by default: losing focus hides the popup while the tray app keeps running. Turn it on to keep the popup open; **Close** appears beside PIN. With PIN on, executing shortcuts or pressing the activation hotkey keeps the popup open. Press Escape while the popup is focused, or click Close, to hide it. PIN is remembered only for the current session. Clicking Quick Cheat retains the last valid external application context.
 
-Applications with saved workflows show **Shortcuts / Workflows** tabs in the popup. Expand a guide and select a step to read its full text. At wider sizes, guides and step text appear side by side; smaller windows stack them. Shortcuts use responsive cards, with category, description and keycaps kept together. Long descriptions or key combinations have a full-text reader. Search filters workflow titles. These are reference guides; they do not execute commands.
+Applications with saved workflows show **Shortcuts / Workflows** tabs in the popup. Expand a guide and select a step to read its full text. At wider sizes, guides and step text appear side by side; smaller windows stack them. Shortcuts use responsive cards beneath their category headers, keeping descriptions and keycaps together. Long descriptions or key combinations have a full-text reader. Search filters workflow titles. These are reference guides; they do not execute commands.
 
 The active application's name is larger and centered above search. Use the pin icon in the top-right corner to keep the popup open; the red **×** beside it closes the popup while leaving Quick Cheat in the tray. Hover over either icon for its label.
 
@@ -91,13 +93,15 @@ Select a workflow's name in the popup to read all its steps in order, with numbe
 
 ![Complete workflow in the popup](docs/images/workflow-overview-dark.png)
 
-This candidate is awaiting manual acceptance and is not the published download above. It reads existing v1/v2 data and writes v3 on the next save. Before upgrading an existing file, it preserves `shortcuts.qc.pre-v3.bak`, in addition to the normal previous-save backup. Older releases cannot read v3: to roll back, exit the app, keep a copy of the v3 file and restore the pre-v3 backup as `shortcuts.qc`. Workflows created in v3 are not available in older versions.
+### Upgrading from 0.1.x
+
+Exit Quick Cheat before replacing the executable. This release reads existing v1/v2 data and writes v3 on the next save. Before upgrading an existing file, it preserves `shortcuts.qc.pre-v3.bak`, in addition to the normal previous-save backup. Older releases cannot read v3: to roll back, exit the app, keep a copy of the v3 data folder and restore the pre-v3 backup as `shortcuts.qc`. Workflows created in v3 are not available in older versions. Full backups include `attachments` and `ui-state.ini`.
 
 ## Build from source
 
 Install Visual Studio 2022 with **Desktop development with C++**, the Windows SDK and CMake tools. In PowerShell, run `./scripts/build.ps1` to build Windows x64 Release and run the headless tests. The executable is written to `build/Release/QuickCheat.exe`.
 
-Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` can capture the popup and library using separate demo data; see [validation notes](docs/validation-0.1.0-alpha.4.md).
+Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that build. `qc_preview.exe` captures the popup and settings using separate demo data. See the [release notes](docs/releases/0.2.0-alpha.8.md) and [validation notes](docs/validation-0.2.0-alpha.8.md).
 
 Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
 
