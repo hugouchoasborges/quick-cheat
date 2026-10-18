@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-alpha.3 — 2026-10-18
+
+Top-right PIN, off by default: focus loss hides the popup while the tray app keeps running. PIN on keeps it visible across focus loss, execution and activation hotkey; Escape or the adjacent Close button hides it. PIN state lasts for the session. Management windows stay usable above a pinned popup.
+
+Responsive native shortcut tiles replace full-width rows. Each card contains its category, description and keycaps, with native selection and keyboard support, deliberate double-click and a full-text reader for long content. Search Up/Down remains sequential. Double-click checks the original target and item. Initial layout and resize/DPI changes invalidate cached tile positions. Storage remains v3; candidate awaiting acceptance.
+
 ## 0.2.0-alpha.2 — 2026-10-18
 
 Retain the last valid foreground application while interacting with Quick Cheat or transient tray/menu windows; failed window identification no longer clears the context. Popup selection is cleared only when a valid new target is identified.
