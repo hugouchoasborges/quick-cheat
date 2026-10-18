@@ -55,6 +55,16 @@ Open **Settings...** from the tray menu. Three tabs keep global preferences sepa
 
 The application selector is shared by Shortcuts and Workflows. Pending edits require confirmation before switching tabs or applications or closing Settings. Popup management buttons open the corresponding tab directly.
 
+## Portable collections — 0.3.0-alpha.1 candidate
+
+Share an application's shortcuts and workflows as a single `.quickcheat.json` file, including Markdown and attached PNG images. In **Settings → Shortcuts** or **Workflows**, use **Export collection...** after saving your edits, or **Import collection...** to preview a file.
+
+Choose **Add** to keep existing content and skip exact duplicates, or **Replace** to replace that application's content after confirmation. Other applications and global settings stay unchanged. Each application still has one active profile.
+
+![Portable collections in dark settings](docs/images/collections-settings-dark.png)
+
+See the [format and limits](docs/collection-format.md) and [candidate acceptance checklist](docs/validation-0.3.0-alpha.1.md). This candidate adds local file sharing; community browsing and voting remain planned.
+
 ## Local data
 
 Shortcuts and settings are stored in `%LOCALAPPDATA%\QuickCheat\shortcuts.qc`. The previous save is kept as `shortcuts.qc.bak`. To restore it, exit the app, keep a copy of the current file and replace it with the backup.
