@@ -58,7 +58,7 @@ void App::selectWorkflowStep(){
  TVITEMW item{};item.mask=TVIF_PARAM;item.hItem=TreeView_GetSelection(workflowTree);if(!item.hItem||!TreeView_GetItem(workflowTree,&item))return;
  size_t flow=(static_cast<size_t>(item.lParam)>>8)-1;size_t step=static_cast<size_t>(item.lParam)&255;if(flow>=profile->workflows.size())return;const auto& guide=profile->workflows[flow];
  std::wstring text;if(step&&step<=guide.steps.size()){text=L"**Step "+std::to_wstring(step)+L" of "+std::to_wstring(guide.steps.size())+L"**\n\n"+guide.steps[step-1];}
- else text=L"# "+guide.title+L"\n\n"+std::to_wstring(guide.steps.size())+L" steps. Expand this workflow and select a step to read it. This guide does not execute commands.";
+ else{std::vector<std::wstring> sections;sections.reserve(guide.steps.size());for(size_t i=0;i<guide.steps.size();++i){auto section=L"## Step "+std::to_wstring(i+1)+L" of "+std::to_wstring(guide.steps.size())+L"\n\n"+guide.steps[i];if(i==0)section=L"# "+guide.title+L"\n\n"+section;sections.push_back(std::move(section));}showMarkdownSections(workflowDetail,sections,file.parent_path(),theme.colors);return;}
  showMarkdown(workflowDetail,text,file.parent_path(),theme.colors);
 }
 }

@@ -4,7 +4,7 @@
 #include <commctrl.h>
 #include <memory>
 namespace qc {
-constexpr wchar_t version[]=L"0.2.0-alpha.7";
+constexpr wchar_t version[]=L"0.2.0-alpha.8";
 constexpr UINT ForegroundChanged=WM_APP+1, TrayMessage=WM_APP+2, ExecuteRow=WM_APP+3;
 constexpr UINT CmdOpen=100,CmdManage=101,CmdData=102,CmdExit=103,CmdNew=104,CmdExecute=105,CmdShortcuts=106,CmdWorkflows=107,CmdManageWorkflows=108,CmdExpand=109,CmdPin=110,CmdPopupClose=111;
 struct Target { HWND window{}; DWORD process{}; std::wstring executable,name; };

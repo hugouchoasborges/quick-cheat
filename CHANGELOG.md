@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0-alpha.8 — 2026-10-18
+
+Selecting a workflow parent displays every step in order in the existing Markdown reader, with the workflow title, numbered step headings and horizontal separators. Selecting a child still displays only that step. Each step is parsed independently so unfinished Markdown cannot affect later sections. The reader accommodates the maximum stored workflow text, retains absolute link offsets and preserves its eight-image preview budget with a message directing users to individual steps for further images. No data migration. Release compilation, independent inspection and isolated dark/light captures completed; no tests added or run. Candidate awaiting acceptance.
+
 ## 0.2.0-alpha.7 — 2026-10-18
 
 Settings reorganized into General, Shortcuts and Workflows. Global appearance, activation and data-folder access have their own page; application selection is shared by the two content tabs. Workflow editing is embedded in the settings window with columns for guides, ordered steps and Markdown text. Popup management actions open the relevant tab; tray Settings opens General. Native themed navigation, clearer spacing and focused forms replace the mixed layout.

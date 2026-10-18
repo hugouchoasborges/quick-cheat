@@ -67,7 +67,7 @@ Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline;
 
 Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
 
-## Workflows — 0.2.0-alpha.7 candidate
+## Workflows — 0.2.0-alpha.8 candidate
 
 The development build adds local step-by-step guides for each application. Open **Settings → Workflows** and choose an application, or use **Manage workflows** in the popup. Enter a title, add your steps, reorder them with **Move up / Move down**, and click **Save workflow**. Changes to the step text are included when you save the workflow.
 
@@ -86,6 +86,10 @@ The active application's name is larger and centered above search. Use the pin i
 Shortcuts appear under category headers with a divider. Click a header to collapse or expand its cards. Quick Cheat remembers each category's state for each application across restarts. New categories start expanded; uncategorized shortcuts appear under **General**. Search reveals matching shortcuts without changing saved expansion preferences. With a category header focused, use Left/Right to collapse/expand or Space to toggle.
 
 ![Local workflow editor](docs/images/workflow-editor-dark.png)
+
+Select a workflow's name in the popup to read all its steps in order, with numbered headings and a divider between steps. Select an individual step to focus on it. Markdown and local images remain available in both views. The complete view previews up to eight images to keep memory bounded; select a step to see its own images if the preview limit is reached.
+
+![Complete workflow in the popup](docs/images/workflow-overview-dark.png)
 
 This candidate is awaiting manual acceptance and is not the published download above. It reads existing v1/v2 data and writes v3 on the next save. Before upgrading an existing file, it preserves `shortcuts.qc.pre-v3.bak`, in addition to the normal previous-save backup. Older releases cannot read v3: to roll back, exit the app, keep a copy of the v3 file and restore the pre-v3 backup as `shortcuts.qc`. Workflows created in v3 are not available in older versions.
 
