@@ -1,32 +1,25 @@
 #include "app.hpp"
 #include <algorithm>
 namespace qc {
-int App::selectedShortcut() const{return rows?ListView_GetNextItem(rows,-1,LVNI_SELECTED):-1;}
+int App::selectedShortcut() const{int index=rows?ListView_GetNextItem(rows,-1,LVNI_SELECTED):-1;return shortcutVisible(index)?index:-1;}
 void App::selectShortcut(int index){
- if(index<0||index>=static_cast<int>(visibleRows.size()))return;
+ if(!shortcutVisible(index))return;
  ListView_SetItemState(rows,-1,0,LVIS_SELECTED|LVIS_FOCUSED);ListView_SetItemState(rows,index,LVIS_SELECTED|LVIS_FOCUSED,LVIS_SELECTED|LVIS_FOCUSED);ListView_EnsureVisible(rows,index,FALSE);
  EnableWindow(GetDlgItem(popup,CmdExecute),!workflowsVisible);updateShortcutDetail();
-}
-void App::populateShortcutTiles(){
- auto* profile=currentProfile();if(!profile)return;
- for(size_t i=0;i<visibleRows.size();++i){const auto& shortcut=profile->shortcuts[visibleRows[i]];
- auto label=shortcut.title+L" — "+formatChord(shortcut.chord)+L" ("+(shortcut.category.empty()?L"General":shortcut.category)+L")";LVITEMW item{};item.mask=LVIF_TEXT;item.iItem=static_cast<int>(i);item.pszText=label.data();ListView_InsertItem(rows,&item);
- }
 }
 void App::layoutShortcutTiles(){
  if(!rows||workflowsVisible)return;UINT dpi=GetDpiForWindow(popup);auto px=[&](int n){return MulDiv(n,dpi,96);};RECT r;GetClientRect(rows,&r);
  int usable=(std::max)(static_cast<int>(r.right)-px(32)-GetSystemMetricsForDpi(SM_CXVSCROLL,dpi),px(200));tileColumns=(std::max)(1,usable/px(300));int nextWidth=usable/tileColumns;
  if(nextWidth!=tileWidth||tileDpi!=dpi){bool previous=updatingPopup,redraw=IsWindowVisible(rows)&&!previous;updatingPopup=true;if(redraw)SendMessageW(rows,WM_SETREDRAW,FALSE,0);
  // Re-enter tile view after updating geometry to invalidate native item positions.
- ListView_SetView(rows,LV_VIEW_ICON);LVTILEVIEWINFO tiles{};tiles.cbSize=sizeof(tiles);tiles.dwMask=LVTVIM_TILESIZE;tiles.dwFlags=LVTVIF_FIXEDSIZE;tiles.sizeTile={nextWidth,px(112)};ListView_SetTileViewInfo(rows,&tiles);ListView_SetView(rows,LV_VIEW_TILE);tileWidth=nextWidth;tileDpi=dpi;
+ ListView_SetView(rows,LV_VIEW_ICON);LVTILEVIEWINFO tiles{};tiles.cbSize=sizeof(tiles);tiles.dwMask=LVTVIM_TILESIZE;tiles.dwFlags=LVTVIF_FIXEDSIZE;tiles.sizeTile={nextWidth,px(92)};ListView_SetTileViewInfo(rows,&tiles);ListView_SetView(rows,LV_VIEW_TILE);tileWidth=nextWidth;tileDpi=dpi;
  updatingPopup=previous;if(redraw)SendMessageW(rows,WM_SETREDRAW,TRUE,0);}
  InvalidateRect(rows,nullptr,FALSE);
 }
 void App::drawRow(DRAWITEMSTRUCT* item){
  auto* profile=currentProfile();if(!profile||item->itemID>=visibleRows.size())return;const auto& shortcut=profile->shortcuts[visibleRows[item->itemID]];
  HDC dc=item->hDC;UINT dpi=GetDpiForWindow(popup);auto px=[&](int n){return MulDiv(n,dpi,96);};auto& c=theme.colors;RECT body=item->rcItem;InflateRect(&body,-px(5),-px(5));bool selected=(item->itemState&ODS_SELECTED)!=0;
- rounded(dc,body,selected?c.selection:c.panel,selected?c.accent:c.border,px(10));auto original=SelectObject(dc,labelFont);RECT category{body.left+px(14),body.top+px(9),body.right-px(14),body.top+px(25)};paintText(dc,shortcut.category.empty()?L"General":shortcut.category,category,c.muted,DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
- SelectObject(dc,font);RECT title{body.left+px(14),body.top+px(29),body.right-px(14),body.top+px(65)};paintText(dc,shortcut.title,title,c.text,DT_WORDBREAK|DT_NOPREFIX|DT_END_ELLIPSIS);
+ rounded(dc,body,selected?c.selection:c.panel,selected?c.accent:c.border,px(10));auto original=SelectObject(dc,font);RECT title{body.left+px(14),body.top+px(9),body.right-px(14),body.top+px(45)};paintText(dc,shortcut.title,title,c.text,DT_WORDBREAK|DT_NOPREFIX|DT_END_ELLIPSIS);
  SelectObject(dc,labelFont);auto chord=formatChord(shortcut.chord);size_t begin=0;int x=body.left+px(14),top=body.bottom-px(34);
  while(begin<chord.size()){auto end=chord.find(L'+',begin);auto token=chord.substr(begin,end==chord.npos?end:end-begin);SIZE size{};GetTextExtentPoint32W(dc,token.c_str(),static_cast<int>(token.size()),&size);RECT key{x,top,x+size.cx+px(16),top+px(26)};
  if(key.right>body.right-px(8)){RECT overflow{x,top,body.right-px(8),top+px(26)};paintText(dc,L"…",overflow,c.muted);break;}

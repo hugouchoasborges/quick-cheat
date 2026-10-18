@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0-alpha.6 — 2026-10-18
+
+Shortcut cards are grouped beneath themed category headers with a divider and expand/collapse chevron. Click a header to toggle it. Expansion preferences are saved per executable and category in ui-state.ini, alongside shortcuts.qc; new categories default to expanded. Search temporarily reveals matching categories without changing saved preferences. Hidden shortcuts cannot be selected or executed; search navigation skips collapsed groups. Native group keyboard access is retained. Cards no longer repeat their category label. Schema v3 and workflow data are unchanged. Release build and isolated dark/light captures completed; manual acceptance pending, no tests added or run.
+
 ## 0.2.0-alpha.5 — 2026-10-18
 
 Larger, centered active-application title in the popup header, with search on its own line. Native DPI-scaled pin and red close icons replace button text; pin state keeps its accent highlight and accessible names/tooltips remain available. High Contrast uses system colors. Close remains visible only while pinned. Shortcut and workflow layouts accommodate the taller header. Data format and popup behavior are unchanged. Release compilation and isolated dark/light captures completed; no tests added or run. Candidate awaiting acceptance.

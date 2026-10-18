@@ -14,6 +14,7 @@ void CALLBACK foregroundEvent(HWINEVENTHOOK,DWORD,HWND window,LONG object,LONG,D
 }
 App::App()=default;
 App::~App() {
+ syncCategoryStates();
  theme.stop();
  if(foregroundHook)UnhookWinEvent(foregroundHook);
  if(host){UnregisterHotKey(host,hotkeyId);NOTIFYICONDATAW n{sizeof(n)};n.hWnd=host;n.uID=1;Shell_NotifyIconW(NIM_DELETE,&n);}
@@ -64,7 +65,7 @@ void App::onForeground(HWND window) {
  if(wcscmp(cls,L"Shell_TrayWnd")==0||wcscmp(cls,L"Shell_SecondaryTrayWnd")==0||wcscmp(cls,L"NotifyIconOverflowWindow")==0||wcscmp(cls,L"TopLevelWindowForOverflowXamlIsland")==0||wcscmp(cls,L"#32768")==0||(GetWindowLongPtrW(window,GWL_EXSTYLE)&WS_EX_NOACTIVATE))return;
  auto next=identify(window);if(!next.window||next.executable.empty())return;
  if(next.window==target.window&&next.process==target.process&&next.executable==target.executable)return;
- target=std::move(next);if(popup&&IsWindowVisible(popup))refreshPopup(true);
+ syncCategoryStates();target=std::move(next);if(popup&&IsWindowVisible(popup))refreshPopup(true);
 }
 Profile* App::currentProfile() { for(auto& p:store.profiles)if(p.executable==target.executable)return &p;return nullptr; }
 void App::togglePopup() {
@@ -74,10 +75,10 @@ void App::togglePopup() {
  positionPopup(true);
  layoutPopup();SetForegroundWindow(popup);SetFocus(search);
 }
-void App::hidePopup(bool restore){if(!popup)return;bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(workflowDetail)clearMarkdown(workflowDetail);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
+void App::hidePopup(bool restore){if(!popup)return;syncCategoryStates();bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(workflowDetail)clearMarkdown(workflowDetail);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);}
 void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);}
 void App::execute(size_t index) {
- if(workflowsVisible)return;
+ if(workflowsVisible||!shortcutVisible(static_cast<int>(index)))return;
  // Re-read actual foreground before consulting a potentially stale event.
  HWND foreground=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(foreground,&pid);
  if(pid!=GetCurrentProcessId()&&foreground!=target.window){onForeground(foreground);return;}

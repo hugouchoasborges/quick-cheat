@@ -7,6 +7,12 @@ constexpr int Search=6;
 void executeSelected(App& app){auto selected=app.selectedShortcut();if(selected>=0)app.execute(static_cast<size_t>(selected));}
 LRESULT CALLBACK rowProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){
  auto* app=reinterpret_cast<App*>(value);
+ if(msg==WM_PAINT){auto result=DefSubclassProc(h,msg,w,l);HDC dc=GetDC(h);for(size_t i=0;i<app->shortcutCategories.size();++i){NMLVCUSTOMDRAW draw{};draw.nmcd.hdc=dc;draw.nmcd.dwItemSpec=i;app->drawCategory(&draw);}ReleaseDC(h,dc);return result;}
+ if(msg==WM_LBUTTONDOWN||msg==WM_LBUTTONDBLCLK){POINT point{static_cast<short>(LOWORD(l)),static_cast<short>(HIWORD(l))};if(app->clickCategory(point))return 0;}
+ if(msg==WM_LBUTTONUP||msg==WM_KEYUP){auto result=DefSubclassProc(h,msg,w,l);app->syncCategoryStates();return result;}
+ if(msg==WM_KEYDOWN&&(w==VK_LEFT||w==VK_RIGHT||w==VK_SPACE)){
+  for(size_t i=0;i<app->shortcutCategories.size();++i)if(ListView_GetGroupState(h,static_cast<int>(i),LVGS_FOCUSED)&LVGS_FOCUSED){LVGROUP group{sizeof(group)};group.mask=LVGF_STATE;group.stateMask=LVGS_COLLAPSED;bool collapsed=(ListView_GetGroupState(h,static_cast<int>(i),LVGS_COLLAPSED)&LVGS_COLLAPSED)!=0;group.state=(w==VK_LEFT||(w==VK_SPACE&&!collapsed))?LVGS_COLLAPSED:0;ListView_SetGroupInfo(h,static_cast<int>(i),&group);app->syncCategoryStates();return 0;}
+ }
  if(msg==WM_LBUTTONDOWN){auto result=DefSubclassProc(h,msg,w,l);app->pressedWindow=app->target.window;app->pressedProcess=app->target.process;app->pressedRow=app->selectedShortcut();app->updateShortcutDetail();SetFocus(app->search);return result;}
  if(msg==WM_KEYDOWN&&w==VK_RETURN){executeSelected(*app);return 0;}
  if(msg==WM_KEYDOWN&&w==VK_ESCAPE){app->hidePopup();return 0;}
@@ -18,7 +24,7 @@ LRESULT CALLBACK searchProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR
  if(msg==WM_KEYDOWN){
  if(w==VK_ESCAPE){app->hidePopup();return 0;}if(w==VK_RETURN){if(app->workflowsVisible){SetFocus(app->workflowTree);auto item=TreeView_GetSelection(app->workflowTree);if(item)TreeView_Expand(app->workflowTree,item,TVE_TOGGLE);}else executeSelected(*app);return 0;}
  if(w==VK_OEM_COMMA&&(GetKeyState(VK_CONTROL)&0x8000)){app->openEditor();return 0;}
- if(w==VK_UP||w==VK_DOWN){if(app->workflowsVisible){SetFocus(app->workflowTree);SendMessageW(app->workflowTree,msg,w,l);return 0;}int count=static_cast<int>(app->visibleRows.size()),selected=app->selectedShortcut();if(count>0)app->selectShortcut(selected<0?0:(std::clamp)(selected+(w==VK_DOWN?1:-1),0,count-1));return 0;}
+ if(w==VK_UP||w==VK_DOWN){if(app->workflowsVisible){SetFocus(app->workflowTree);SendMessageW(app->workflowTree,msg,w,l);return 0;}app->moveShortcutSelection(w==VK_DOWN?1:-1);return 0;}
  }
  if(msg==WM_CHAR&&(w==VK_RETURN||w==VK_ESCAPE))return 0;
  if(msg==WM_PAINT){auto result=DefSubclassProc(h,msg,w,l);if(GetWindowTextLengthW(h)==0){HDC dc=GetDC(h);RECT r;GetClientRect(h,&r);r.left+=8;auto old=SelectObject(dc,app->bold);paintText(dc,app->workflowsVisible?L"Search workflows...":L"Search shortcuts...",r,app->theme.colors.muted);SelectObject(dc,old);ReleaseDC(h,dc);}return result;}
@@ -71,7 +77,7 @@ void App::layoutPopup(){
  InvalidateRect(popup,nullptr,TRUE);
 }
 void App::refreshPopup(bool clearSearch){
- if(!popup||updatingPopup)return;updatingPopup=true;pressedRow=-1;if(clearSearch)SetWindowTextW(search,L"");
+ if(!popup||updatingPopup)return;syncCategoryStates();updatingPopup=true;pressedRow=-1;if(clearSearch)SetWindowTextW(search,L"");
  auto* profile=currentProfile();auto query=textOf(search);visibleRows.clear();SendMessageW(rows,WM_SETREDRAW,FALSE,0);ListView_DeleteAllItems(rows);ListView_RemoveAllGroups(rows);
  SetWindowTextW(heading,(profile?profile->name:target.name.empty()?L"No active application":target.name).c_str());
  if(profile){for(size_t i=0;i<profile->shortcuts.size();++i)if(matchesShortcut(profile->shortcuts[i],query))visibleRows.push_back(i);
@@ -79,7 +85,7 @@ void App::refreshPopup(bool clearSearch){
  }populateShortcutTiles();
  ShowWindow(rows,visibleRows.empty()?SW_HIDE:SW_SHOWNA);ShowWindow(empty,visibleRows.empty()?SW_SHOWNA:SW_HIDE);
  SetWindowTextW(empty,query.empty()?L"No shortcuts for this application yet.\n\nOpen Manage shortcuts to add your first one.":L"No matching shortcuts.\n\nTry another description, category or key combination.");
- if(!visibleRows.empty())selectShortcut(0);EnableWindow(GetDlgItem(popup,CmdExecute),!visibleRows.empty());
+ if(!visibleRows.empty())moveShortcutSelection(1);EnableWindow(GetDlgItem(popup,CmdExecute),selectedShortcut()>=0);
  SendMessageW(rows,WM_SETREDRAW,TRUE,0);SetWindowTextW(footer,(std::to_wstring(visibleRows.size())+(visibleRows.size()==1?L" shortcut":L" shortcuts")+L"  ·  Quick Cheat").c_str());
  refreshWorkflowPopup();updatingPopup=false;layoutPopup();
 }
@@ -102,7 +108,7 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);app->layoutPopup();return 0;}
  case WM_DRAWITEM:app->theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l));return TRUE;
  case WM_NOTIFY:{auto* notice=reinterpret_cast<NMHDR*>(l);if(notice->hwndFrom==app->workflowDetail&&notice->code==EN_LINK)return handleMarkdownLink(reinterpret_cast<ENLINK*>(l))?1:0;if(notice->hwndFrom==app->workflowTree&&notice->code==TVN_SELCHANGEDW)app->selectWorkflowStep();
- if(notice->hwndFrom==app->rows){if(notice->code==NM_CUSTOMDRAW){auto* draw=reinterpret_cast<NMLVCUSTOMDRAW*>(l);if(draw->nmcd.dwDrawStage==CDDS_PREPAINT)return CDRF_NOTIFYITEMDRAW;if(draw->nmcd.dwDrawStage==CDDS_ITEMPREPAINT&&draw->dwItemType==LVCDI_ITEM){DRAWITEMSTRUCT item{};item.itemID=static_cast<UINT>(draw->nmcd.dwItemSpec);item.hDC=draw->nmcd.hdc;ListView_GetItemRect(app->rows,item.itemID,&item.rcItem,LVIR_BOUNDS);if(ListView_GetItemState(app->rows,item.itemID,LVIS_SELECTED))item.itemState=ODS_SELECTED;app->drawRow(&item);return CDRF_SKIPDEFAULT;}return CDRF_DODEFAULT;}
+ if(notice->hwndFrom==app->rows){if(notice->code==NM_CUSTOMDRAW){auto* draw=reinterpret_cast<NMLVCUSTOMDRAW*>(l);if(draw->nmcd.dwDrawStage==CDDS_PREPAINT)return CDRF_NOTIFYITEMDRAW;if(draw->nmcd.dwDrawStage==CDDS_ITEMPREPAINT&&draw->dwItemType==LVCDI_GROUP){app->drawCategory(draw);return CDRF_SKIPDEFAULT;}if(draw->nmcd.dwDrawStage==CDDS_ITEMPREPAINT&&draw->dwItemType==LVCDI_ITEM){DRAWITEMSTRUCT item{};item.itemID=static_cast<UINT>(draw->nmcd.dwItemSpec);item.hDC=draw->nmcd.hdc;ListView_GetItemRect(app->rows,item.itemID,&item.rcItem,LVIR_BOUNDS);if(ListView_GetItemState(app->rows,item.itemID,LVIS_SELECTED))item.itemState=ODS_SELECTED;app->drawRow(&item);return CDRF_SKIPDEFAULT;}return CDRF_DODEFAULT;}
  if(notice->code==LVN_ITEMCHANGED&&!app->updatingPopup)app->updateShortcutDetail();
  if(notice->code==NM_DBLCLK){int index=reinterpret_cast<NMITEMACTIVATE*>(l)->iItem;bool valid=index>=0&&index==app->pressedRow&&app->pressedWindow==app->target.window&&app->pressedProcess==app->target.process;app->pressedRow=-1;if(valid)app->execute(static_cast<size_t>(index));}}
  return 0;}
