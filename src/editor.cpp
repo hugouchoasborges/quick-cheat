@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "settings.hpp"
 #include "workflows.hpp"
+#include "dock.hpp"
 #include <commdlg.h>
 #include <shellapi.h>
 #include <algorithm>
@@ -17,15 +18,15 @@ void Editor::show() {
  if(app.settingsVisible)return;
  draft=app.store;
  if(!app.target.executable.empty()) {
- auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==app.target.executable;});
- if(it==draft.profiles.end()&&draft.profiles.size()<256){draft.profiles.push_back({app.target.executable,app.target.name,{}});profileIndex=static_cast<int>(draft.profiles.size()-1);}else if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());
+ auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==app.target.executable&&p.website==app.target.website;});
+ if(it==draft.profiles.end()&&draft.profiles.size()<256){draft.profiles.push_back({app.target.executable,app.target.website.empty()?app.target.name:app.target.website,{},{},app.target.website});profileIndex=static_cast<int>(draft.profiles.size()-1);}else if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());
  }
  refreshProfiles();SetWindowTextW(trigger,formatChord(draft.trigger).c_str());SendMessageW(themeSelect,CB_SETCURSEL,static_cast<UINT>(draft.theme),0);SetWindowTextW(status,L"Stored on this computer. Select a shortcut to edit, or create a new one.");
  updateWorkflowPage();app.theme.style(window);ShowWindow(window,SW_SHOW);layout();
 }
 void Editor::refreshProfiles() {
  refreshing=true;SendMessageW(profiles,CB_RESETCONTENT,0,0);
- for(const auto& p:draft.profiles){auto name=p.name+L"  ("+p.executable+L")";SendMessageW(profiles,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));}
+ for(const auto& p:draft.profiles){auto name=p.name+L"  ("+p.executable+(p.website.empty()?L"":L" / "+p.website)+L")";SendMessageW(profiles,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));}
  if(profileIndex<0||profileIndex>=static_cast<int>(draft.profiles.size()))profileIndex=draft.profiles.empty()?-1:0;
  SendMessageW(profiles,CB_SETCURSEL,profileIndex,0);refreshing=false;refreshList();
 }
@@ -44,7 +45,7 @@ void Editor::loadSelection() {
 void Editor::addProfile() {
  wchar_t file[32768]{};OPENFILENAMEW dialog{sizeof(dialog)};dialog.hwndOwner=window;dialog.lpstrFilter=L"Applications (*.exe)\0*.exe\0\0";dialog.lpstrFile=file;dialog.nMaxFile=32768;dialog.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
  if(!GetOpenFileNameW(&dialog))return;auto exe=appKey(file);
- auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==exe;});
+ auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==exe&&p.website.empty();});
  if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());else if(draft.profiles.size()<256){draft.profiles.push_back({exe,exe.substr(0,exe.size()-4),{}});profileIndex=static_cast<int>(draft.profiles.size()-1);}else{app.error(L"The maximum of 256 application profiles has been reached.",window);return;}
  if(!persist())draft=app.store;refreshProfiles();
 }
@@ -59,7 +60,7 @@ void Editor::saveShortcut() {
  if(!validStore(draft)){draft=std::move(original);app.error(L"Add a description (up to 240 characters) and a category (up to 80 characters). The profile supports up to 2048 shortcuts.",window);return;}
  if(!persist()){draft=std::move(original);return;}refreshList();
 }
-void Editor::deleteShortcut(){if(profileIndex<0||shortcutIndex<0)return;if(MessageBoxW(window,L"Delete the selected shortcut?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;auto& s=draft.profiles[profileIndex].shortcuts;s.erase(s.begin()+shortcutIndex);if(!persist())draft=std::move(old);refreshList();}
+void Editor::deleteShortcut(){if(profileIndex<0||shortcutIndex<0)return;if(MessageBoxW(window,L"Delete the selected shortcut?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;removeDockShortcut(draft.profiles[profileIndex],static_cast<size_t>(shortcutIndex));auto& s=draft.profiles[profileIndex].shortcuts;s.erase(s.begin()+shortcutIndex);if(!persist())draft=std::move(old);refreshList();}
 void Editor::deleteProfile(){if(profileIndex<0)return;if(MessageBoxW(window,L"Delete this application profile, all its shortcuts and workflows?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;draft.profiles.erase(draft.profiles.begin()+profileIndex);if(!persist())draft=std::move(old);profileIndex=-1;refreshProfiles();}
 void Editor::applyTrigger(){auto chord=parseChord(textOf(trigger));if(!chord||!chord->modifiers||chord->key==VK_F12){app.error(L"Activation requires a modifier (Ctrl, Alt, Shift or Win) and a key other than F12.",window);return;}auto old=draft.trigger;draft.trigger=*chord;if(!persist())draft.trigger=old;SetWindowTextW(trigger,formatChord(draft.trigger).c_str());}
 void Editor::applyAppearance(){auto selected=SendMessageW(themeSelect,CB_GETCURSEL,0,0);if(selected<0||selected>2)return;auto old=draft.theme;draft.theme=static_cast<ThemeMode>(selected);if(!persist())draft.theme=old;SendMessageW(themeSelect,CB_SETCURSEL,static_cast<UINT>(draft.theme),0);}
@@ -84,7 +85,7 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  switch(msg){
  case WM_CREATE:{
  control(h,L"STATIC",L"Settings",0,PageTitle);control(h,L"STATIC",L"Preferences and local libraries.",0,PageSubtitle);control(h,L"STATIC",L"Appearance",0,LabelTheme);
- control(h,L"BUTTON",L"General",WS_TABSTOP,TabGeneral);control(h,L"BUTTON",L"Shortcuts",WS_TABSTOP,TabShortcuts);control(h,L"BUTTON",L"Workflows",WS_TABSTOP,TabWorkflows);
+ control(h,L"BUTTON",L"General",WS_TABSTOP,TabGeneral);control(h,L"BUTTON",L"Shortcuts",WS_TABSTOP,TabShortcuts);control(h,L"BUTTON",L"Workflows",WS_TABSTOP,TabWorkflows);control(h,L"BUTTON",L"Dock",WS_TABSTOP,TabDock);
  control(h,L"STATIC",L"Choose a theme, or follow your Windows appearance.",0,ThemeHelp);
  control(h,L"STATIC",L"The keyboard combination that opens Quick Cheat in any application.",0,TriggerHelp);
  control(h,L"STATIC",L"Local data",0,DataLabel);control(h,L"STATIC",e->app.file.parent_path().c_str(),SS_PATHELLIPSIS,DataPath);
@@ -101,7 +102,7 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  control(h,L"STATIC",L"Keyboard shortcut",0,LabelKeys);e->keys=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Keys);SendMessageW(e->keys,EM_SETLIMITTEXT,100,0);SetWindowSubclass(e->keys,captureProc,1,reinterpret_cast<DWORD_PTR>(e));control(h,L"BUTTON",L"Record",WS_TABSTOP,Record);
  control(h,L"BUTTON",L"Save shortcut",WS_TABSTOP,Save);control(h,L"BUTTON",L"New shortcut",WS_TABSTOP,New);control(h,L"BUTTON",L"Delete",WS_TABSTOP,Delete);control(h,L"BUTTON",L"Remove application",WS_TABSTOP,RemoveProfile);
  control(h,L"STATIC",L"Activation shortcut",0,LabelTrigger);e->trigger=control(h,L"EDIT",L"",ES_AUTOHSCROLL|WS_TABSTOP,Trigger);SendMessageW(e->trigger,EM_SETLIMITTEXT,100,0);control(h,L"BUTTON",L"Apply",WS_TABSTOP,Apply);
- e->status=control(h,L"STATIC",L"",0,Status);return 0;}
+ control(h,L"BUTTON",L"Website...",WS_TABSTOP,Website);control(h,L"STATIC",L"Website detection: Edge and Chrome via Windows accessibility. No extension required. Unavailable domains use browser shortcuts only.",0,BrowserHelp);e->status=control(h,L"STATIC",L"",0,Status);return 0;}
  case WM_SIZE:e->layout();return 0;
  case WM_VSCROLL:case WM_HSCROLL:e->scroll(msg,w);return 0;
  case WM_MOUSEWHEEL:e->scroll(WM_VSCROLL,MAKEWPARAM(GET_WHEEL_DELTA_WPARAM(w)>0?SB_PAGEUP:SB_PAGEDOWN,0));return 0;
@@ -116,14 +117,14 @@ LRESULT CALLBACK Editor::proc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(l)->idFrom==Entries&&reinterpret_cast<NMHDR*>(l)->code==LVN_ITEMCHANGED)e->loadSelection();return 0;
  case WM_COMMAND:switch(LOWORD(w)){
  case CmdManageWorkflows:case TabWorkflows:e->selectPage(2);break;
- case TabGeneral:e->selectPage(0);break;case TabShortcuts:e->selectPage(1);break;
+ case TabDock:e->selectPage(3);break;case Website:if(e->leavePage())e->addWebsite();break;case TabGeneral:e->selectPage(0);break;case TabShortcuts:e->selectPage(1);break;
  case OpenData:ShellExecuteW(h,L"open",e->app.file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;
  case ImportCollection:e->importApplicationCollection();break;case ExportCollection:e->exportApplicationCollection();break;
  case ThemeSelect:if(HIWORD(w)==CBN_SELCHANGE&&!e->refreshing)e->applyAppearance();break;
  case Profiles:if(HIWORD(w)==CBN_SELCHANGE&&!e->refreshing)e->selectProfile(static_cast<int>(SendMessageW(e->profiles,CB_GETCURSEL,0,0)));break;
  case Browse:if(e->leavePage()){e->addProfile();e->updateWorkflowPage();e->layout();}break;case Save:e->saveShortcut();break;case New:e->clearFields();SetFocus(e->title);break;case Delete:e->deleteShortcut();break;case RemoveProfile:e->deleteProfile();break;case Apply:e->applyTrigger();break;
  case Record:e->recording=true;SetWindowTextW(GetDlgItem(h,Record),L"Press...");SendMessageW(e->keys,EM_SETREADONLY,TRUE,0);SetFocus(e->keys);break;
- case IDOK:if(e->page==0)e->applyTrigger();else if(e->page==1)e->saveShortcut();else if(e->app.workflowEditor)e->app.workflowEditor->save();break;case IDCANCEL:e->close();break;}return 0;
+ case IDOK:if(e->page==0)e->applyTrigger();else if(e->page==1)e->saveShortcut();else if(e->page==2&&e->app.workflowEditor)e->app.workflowEditor->save();else if(e->page==3&&e->dockSettings)e->dockSettings->save();break;case IDCANCEL:e->close();break;}return 0;
  case WM_CLOSE:e->close();return 0;
  }return DefWindowProcW(h,msg,w,l);
 }

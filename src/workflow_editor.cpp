@@ -7,17 +7,14 @@ namespace qc {
 namespace {
 enum {FlowList=400,FlowTitle,StepList,StepText,NewFlow,SaveFlow,DeleteFlow,NewStep,ApplyStep,DeleteStep,StepUp,StepDown,Close,Status,PageTitle,TitleLabel,StepsLabel,TextLabel,AttachImage};
 bool hasText(const std::wstring& text){return text.find_first_not_of(L" \t\r\n")!=text.npos;}
-Profile* findProfile(Store& store,const std::wstring& key){for(auto& p:store.profiles)if(p.executable==key)return &p;return nullptr;}
-void syncWorkflowDraft(App& app){if(app.editor)for(auto& profile:app.editor->draft.profiles)if(auto* saved=findProfile(app.store,profile.executable))profile.workflows=saved->workflows;if(app.editor)app.editor->updateCollectionActions();}
+
+void syncWorkflowDraft(App& app){if(app.editor)for(auto& profile:app.editor->draft.profiles)if(auto* saved=findProfile(app.store,profileKey(profile)))profile.workflows=saved->workflows;if(app.editor)app.editor->updateCollectionActions();}
 std::wstring summary(const std::wstring& text){auto line=text.substr(0,96);for(auto& c:line)if(c==L'\n'||c==L'\r'||c==L'\t')c=L' ';return line+(text.size()>96?L"…":L"");}
 std::wstring storedText(const std::wstring& text){std::wstring out;for(size_t i=0;i<text.size();++i){if(text[i]==L'\r'){out+=L'\n';if(i+1<text.size()&&text[i+1]==L'\n')++i;}else out+=text[i];}return out;}
 std::wstring editText(const std::wstring& text){std::wstring out;for(auto c:storedText(text)){if(c==L'\n')out+=L'\r';out+=c;}return out;}
 }
 WorkflowEditor::~WorkflowEditor(){if(window)DestroyWindow(window);if(font)DeleteObject(font);}
-void App::openWorkflowEditor(const std::wstring& key){
- if(key.empty())return;
- if(!popupPinned)hidePopup(false);if(!editor)editor=std::make_unique<Editor>(*this);if(editor->window)SetWindowLongPtrW(editor->window,GWLP_HWNDPARENT,reinterpret_cast<LONG_PTR>(popupPinned?popup:nullptr));editor->show();editor->openWorkflows(key);
-}
+void App::openWorkflowEditor(const std::wstring& key){openEditor(2);if(editor)editor->openWorkflows(key);}
 bool WorkflowEditor::show(const std::wstring& key,HWND parent){
  if(window&&IsWindowVisible(window)&&executable==key)return true;
  if(!discard())return false;

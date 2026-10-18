@@ -10,8 +10,8 @@ bool preserveLegacy(const std::filesystem::path& file,std::wstring& error){
  {Handle h{CreateFileW(file.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr)};
  if(h.value==INVALID_HANDLE_VALUE){if(GetLastError()==ERROR_FILE_NOT_FOUND||GetLastError()==ERROR_PATH_NOT_FOUND)return true;return fail(error,L"Cannot inspect data before migration");}
  char header[5]{};DWORD read=0;if(!ReadFile(h.value,header,5,&read,nullptr))return fail(error,L"Cannot inspect data before migration");
- legacy=read==5&&header[0]=='Q'&&header[1]=='C'&&header[2]=='\t'&&(header[3]=='1'||header[3]=='2')&&header[4]=='\n';}
- if(legacy&&!CopyFileW(file.c_str(),(file.wstring()+L".pre-v3.bak").c_str(),TRUE)&&GetLastError()!=ERROR_FILE_EXISTS)return fail(error,L"Cannot preserve pre-migration backup");
+ legacy=read==5&&header[0]=='Q'&&header[1]=='C'&&header[2]=='\t'&&(header[3]=='1'||header[3]=='2'||header[3]=='3')&&header[4]=='\n';}
+ if(legacy&&!CopyFileW(file.c_str(),(file.wstring()+L".pre-v4.bak").c_str(),TRUE)&&GetLastError()!=ERROR_FILE_EXISTS)return fail(error,L"Cannot preserve pre-migration backup");
  return true;
 }
 }

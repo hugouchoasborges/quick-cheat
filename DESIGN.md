@@ -42,3 +42,6 @@ Shortcuts and Workflows share native Import/Export buttons beside the applicatio
 
 ## Settings inside the main window (0.3.0-alpha.2)
 The footer Manage actions are replaced by an authored GDI gear directly left of PIN. Settings is a child panel in the same popup HWND, with General/Shortcuts/Workflows tabs and an authored Back arrow in the header. Header icons retain accessible labels and tooltips. Back/gear return after discard confirmation. Escape/Close/unpinned focus loss retain the draft while hiding to tray. Own dialogs do not trigger dismissal; process exit checks hidden drafts. Native scrolling handles small windows. This supersedes older descriptions of a separate owned settings window.
+
+## Dock and website context (0.4 candidate)
+Fourth Settings tab Dock keeps explicit Apply, ordered checkbox list, orientation/scale/opacity and pending-edit guards. Website... adds an exact-host profile under the selected browser; profile selector labels identify executable plus host. Popup shortcuts group Browser/category and hostname/category; workflow tree uses Browser and Website roots. Dock is a nonactivating native topmost strip with grip, collapse and shortcut buttons. No continuous redraw or browser polling. Ambiguous native address reads use browser-only content.

@@ -45,9 +45,13 @@ void App::layoutWorkflowPopup(){
 void App::refreshWorkflowPopup(){
  auto* profile=currentProfile();if(!profile||profile->workflows.empty())workflowsVisible=false;
  layoutWorkflowPopup();if(!workflowsVisible)return;
- refreshingWorkflows=true;SendMessageW(workflowTree,WM_SETREDRAW,FALSE,0);TreeView_DeleteAllItems(workflowTree);clearMarkdown(workflowDetail);auto query=textOf(search);size_t shown=0;HTREEITEM first=nullptr;
+ refreshingWorkflows=true;SendMessageW(workflowTree,WM_SETREDRAW,FALSE,0);TreeView_DeleteAllItems(workflowTree);clearMarkdown(workflowDetail);auto query=textOf(search);size_t shown=0;HTREEITEM first=nullptr,browserGroup=nullptr,siteGroup=nullptr;
  for(size_t i=0;i<profile->workflows.size();++i){const auto& flow=profile->workflows[i];if(!contains(flow.title,query))continue;++shown;
- auto label=preview(flow.title);TVINSERTSTRUCTW entry{};entry.hParent=TVI_ROOT;entry.hInsertAfter=TVI_LAST;entry.item.mask=TVIF_TEXT|TVIF_PARAM;entry.item.pszText=label.data();entry.item.lParam=static_cast<LPARAM>((i+1)<<8);auto root=TreeView_InsertItem(workflowTree,&entry);if(!first)first=root;
+ HTREEITEM parent=TVI_ROOT;
+ if(isBrowserExecutable(target.executable)){
+  auto& group=i<browserWorkflowCount?browserGroup:siteGroup;if(!group){auto text=i<browserWorkflowCount?L"Browser":L"Website: "+target.website;TVINSERTSTRUCTW section{};section.hParent=TVI_ROOT;section.hInsertAfter=TVI_LAST;section.item.mask=TVIF_TEXT|TVIF_PARAM;section.item.pszText=text.data();section.item.lParam=0;group=TreeView_InsertItem(workflowTree,&section);TreeView_Expand(workflowTree,group,TVE_EXPAND);}parent=group;
+ }
+ auto label=preview(flow.title);TVINSERTSTRUCTW entry{};entry.hParent=parent;entry.hInsertAfter=TVI_LAST;entry.item.mask=TVIF_TEXT|TVIF_PARAM;entry.item.pszText=label.data();entry.item.lParam=static_cast<LPARAM>((i+1)<<8);auto root=TreeView_InsertItem(workflowTree,&entry);if(!first)first=root;
  for(size_t j=0;j<flow.steps.size();++j){auto text=std::to_wstring(j+1)+L". "+preview(flow.steps[j]);entry.hParent=root;entry.item.pszText=text.data();entry.item.lParam=static_cast<LPARAM>(((i+1)<<8)|(j+1));TreeView_InsertItem(workflowTree,&entry);}
  }
  refreshingWorkflows=false;if(first){TreeView_Expand(workflowTree,first,TVE_EXPAND);TreeView_SelectItem(workflowTree,first);}else showMarkdown(workflowDetail,L"No matching workflows. Try another title.",file.parent_path(),theme.colors);
@@ -56,7 +60,7 @@ void App::refreshWorkflowPopup(){
 void App::selectWorkflowStep(){
  if(refreshingWorkflows)return;auto* profile=currentProfile();if(!profile)return;
  TVITEMW item{};item.mask=TVIF_PARAM;item.hItem=TreeView_GetSelection(workflowTree);if(!item.hItem||!TreeView_GetItem(workflowTree,&item))return;
- size_t flow=(static_cast<size_t>(item.lParam)>>8)-1;size_t step=static_cast<size_t>(item.lParam)&255;if(flow>=profile->workflows.size())return;const auto& guide=profile->workflows[flow];
+ if(item.lParam==0){showMarkdown(workflowDetail,L"Select a workflow to read its steps.",file.parent_path(),theme.colors);return;}size_t flow=(static_cast<size_t>(item.lParam)>>8)-1;size_t step=static_cast<size_t>(item.lParam)&255;if(flow>=profile->workflows.size())return;const auto& guide=profile->workflows[flow];
  std::wstring text;if(step&&step<=guide.steps.size()){text=L"**Step "+std::to_wstring(step)+L" of "+std::to_wstring(guide.steps.size())+L"**\n\n"+guide.steps[step-1];}
  else{std::vector<std::wstring> sections;sections.reserve(guide.steps.size());for(size_t i=0;i<guide.steps.size();++i){auto section=L"## Step "+std::to_wstring(i+1)+L" of "+std::to_wstring(guide.steps.size())+L"\n\n"+guide.steps[i];if(i==0)section=L"# "+guide.title+L"\n\n"+section;sections.push_back(std::move(section));}showMarkdownSections(workflowDetail,sections,file.parent_path(),theme.colors);return;}
  showMarkdown(workflowDetail,text,file.parent_path(),theme.colors);

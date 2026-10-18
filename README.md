@@ -45,11 +45,12 @@ You can also open the library from the tray icon. If the default hotkey is alrea
 
 ## Settings
 
-Use the **gear** to the left of PIN, or open **Settings...** from the tray menu. Three tabs keep global preferences separate from application content:
+Use the **gear** to the left of PIN, or open **Settings...** from the tray menu. Tabs keep global preferences separate from application content:
 
 - **General:** appearance, activation shortcut and access to your local data folder.
 - **Shortcuts:** choose an application, organize categories, and add, edit or record shortcuts.
 - **Workflows:** choose an application and manage its guides, ordered steps, Markdown and attached images in the same window.
+- **Dock (0.4 candidate):** choose and order shortcuts, orientation, scale, opacity and initial collapsed state.
 
 ![General settings in dark mode](docs/images/v0.3.0-alpha.2/settings-general-dark.png)
 
@@ -65,6 +66,22 @@ Choose **Add** to keep existing content and skip exact duplicates, or **Replace*
 
 See the [format and limits](docs/collection-format.md) and [acceptance checklist](docs/validation-0.3.0-alpha.1.md). This release adds local file sharing; community browsing and voting remain planned.
 
+## 0.4.0-alpha.1 candidate — Dock and websites
+
+The next candidate adds a native **Dock** for each application: check shortcuts, arrange their order, choose horizontal/vertical layout, scale and opacity, then Apply. The dock appears only over its foreground application, supports grip dragging and collapse/expand, and sends a shortcut without taking keyboard focus.
+
+![Contextual dock](docs/images/v0.4.0-alpha.1/dock-dark.png)
+
+![Dock settings](docs/images/v0.4.0-alpha.1/dock-settings-dark.png)
+
+**Edge and Chrome on Windows** can use website-specific shortcuts and workflows without an extension. Select the browser in Settings and choose **Website...** to create an exact-hostname profile. General browser content remains visible alongside the website's categories and workflow group. A configured website dock overrides the generic browser dock; otherwise the generic dock remains available.
+
+![Website profile editor with fictional demo data](docs/images/v0.4.0-alpha.1/website-editor-light.png)
+
+Detection uses Windows UI Automation on a background worker, triggered by window/address events and popup activation. It reads only the address field, keeps only the hostname, and does not use the clipboard, download pages or maintain history. The popup waits for the bounded browser read before taking focus; website shortcut execution restores browser focus and confirms the hostname first. Unknown/ambiguous addresses fall back to browser content. Native accessibility cannot reliably identify private windows. Firefox and Android are not part of this candidate.
+
+See [browser integration and limits](docs/browser-integration.md) and the [manual acceptance checklist](docs/validation-0.4.0-alpha.1.md). Download above still points to the published 0.3 release; 0.4 awaits manual acceptance.
+
 ## Local data
 
 Shortcuts and settings are stored in `%LOCALAPPDATA%\QuickCheat\shortcuts.qc`. The previous save is kept as `shortcuts.qc.bak`. To restore it, exit the app, keep a copy of the current file and replace it with the backup.
@@ -77,7 +94,7 @@ For separate demo or portable data, launch `QuickCheat.exe --data-dir <directory
 
 Windows x64 only. Windows 10 1809+ and Windows 11 are the intended API baseline; compatibility has not been verified on every Windows version or monitor setup. Elevated or protected applications may block shortcut execution. Profiles are matched by executable filename, so apps with the same filename share a profile.
 
-Each shortcut contains one key combination. Docks, community sharing, an installer and automatic updates are planned for later consideration.
+Each shortcut contains one key combination. Community sharing, an installer and automatic updates remain planned. The 0.4 candidate adds the contextual dock and native website profiles.
 
 ## Workflows
 
@@ -105,7 +122,7 @@ Select a workflow's name in the popup to read all its steps in order, with numbe
 
 ### Upgrading from 0.1.x
 
-Exit Quick Cheat before replacing the executable. This release reads existing v1/v2 data and writes v3 on the next save. Before upgrading an existing file, it preserves `shortcuts.qc.pre-v3.bak`, in addition to the normal previous-save backup. Older releases cannot read v3: to roll back, exit the app, keep a copy of the v3 data folder and restore the pre-v3 backup as `shortcuts.qc`. Workflows created in v3 are not available in older versions. Full backups include `attachments` and `ui-state.ini`.
+Exit Quick Cheat before replacing the executable. The 0.4 candidate reads existing v1/v2/v3 data and writes v4 on the next save, preserving `shortcuts.qc.pre-v4.bak` first. Older releases cannot read v4. To roll back, exit the app, keep a copy of the upgraded data folder and restore that pre-v4 backup as `shortcuts.qc`. Website/dock changes made in v4 will not exist in the older backup. Full backups include `attachments` and `ui-state.ini`.
 
 ## Build from source
 

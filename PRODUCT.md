@@ -28,3 +28,6 @@ Per-application JSON import/export includes saved shortcuts, workflows and refer
 
 ## Settings navigation (0.3 candidate)
 Gear beside PIN opens General in the same main window; tray Settings uses the same panel. Back returns to the contextual library, confirming pending edits. Escape/focus dismissal preserve drafts. The separate settings window and footer Manage actions are superseded.
+
+## Contextual Dock and websites (0.4 candidate)
+Native Windows Dock: ordered selected shortcuts, orientation, scale, opacity, grip position and collapse state; shows only for its foreground target and does not take focus when clicked. Website context is native UI Automation for Edge/Chrome, expressly chosen over extensions. Exact hostname per executable; browser content and website content displayed together. Browser-only fallback, fresh confirmation before site execution. Firefox and Android deferred. Local v4 + collection format2; candidate awaits acceptance.
