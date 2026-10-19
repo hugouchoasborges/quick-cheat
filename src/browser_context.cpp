@@ -29,13 +29,15 @@ std::wstring address(IUIAutomation2* automation,HWND window,DWORD process) {
  for(auto property:{UIA_ControlTypePropertyId,UIA_ClassNamePropertyId,UIA_IsOffscreenPropertyId,UIA_HasKeyboardFocusPropertyId})cache->AddProperty(property);
  struct Node {ComPtr<IUIAutomationElement> element;unsigned depth{};bool toolbar{};};
  std::deque<Node> queue;queue.push_back({root,0,false});ComPtr<IUIAutomationElement> candidate;
- unsigned examined{};
+ // Modern Edge chrome can exceed 128 elements before traversal completes,
+ // even when the omnibox has already been found. Keep the time bound unchanged.
+ constexpr unsigned maxElements=512;unsigned examined{};
  // Walk only the browser chrome. Never descend into a document or renderer host.
- while(!queue.empty()&&examined<128&&GetTickCount64()<deadline){
+ while(!queue.empty()&&examined<maxElements&&GetTickCount64()<deadline){
   auto node=std::move(queue.front());queue.pop_front();if(node.depth>=9)continue;
   ComPtr<IUIAutomationElement> child;
   if(FAILED(walker->GetFirstChildElementBuildCache(node.element.Get(),cache.Get(),&child)))continue;
-  while(child&&examined++<128&&GetTickCount64()<deadline){
+  while(child&&examined++<maxElements&&GetTickCount64()<deadline){
    CONTROLTYPEID type{};BOOL hidden=TRUE,focused=TRUE;BSTR className{};
    child->get_CachedControlType(&type);child->get_CachedIsOffscreen(&hidden);child->get_CachedHasKeyboardFocus(&focused);child->get_CachedClassName(&className);
    bool renderer=className&&wcsstr(className,L"RenderWidgetHost");SysFreeString(className);
@@ -54,7 +56,7 @@ std::wstring address(IUIAutomation2* automation,HWND window,DWORD process) {
   }
  }
  // An incomplete traversal cannot establish that the address field is unique.
- if(!queue.empty()||examined>=128||GetTickCount64()>=deadline||!candidate)return {};
+ if(!queue.empty()||examined>=maxElements||GetTickCount64()>=deadline||!candidate)return {};
  ComPtr<IUIAutomationValuePattern> value;
  if(FAILED(candidate->GetCurrentPatternAs(UIA_ValuePatternId,IID_PPV_ARGS(&value))))return {};
  BSTR text{};if(FAILED(value->get_CurrentValue(&text))){SysFreeString(text);return {};}

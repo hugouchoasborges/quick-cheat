@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0-alpha.2 — 2026-10-19
+
+Local candidate: increase the bounded native browser-chrome traversal from 128 to 512 elements. Observed Edge 155 exposes the address field but exceeds the previous completion budget, causing browser-only fallback. The 400 ms deadline, focused/ambiguous field rejection, renderer exclusion and execution confirmation remain. Live popup acceptance is pending; no automated tests added or run.
+
 ## 0.5.0-alpha.1 — 2026-10-19
 
 Local engineering candidate, not accepted or published. BuildDirectory isolates compilation from the running development build. Local x64 Release packaging requires clean source and includes an explicit executable/documentation/license allowlist, commit/toolchain metadata and SHA-256 manifests. Added support matrix, controlled measurement protocol and recovery instructions. Windows/browser minimum versions and resource budgets remain unconfirmed. Runtime/UI/data formats retain the 0.4 alpha.2 behavior; cumulative 0.4 acceptance remains pending. No automated tests added or run.

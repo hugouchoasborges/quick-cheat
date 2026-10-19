@@ -16,7 +16,7 @@ $stage=Join-Path $output $name
 $zip="$stage.zip"
 if((Test-Path -LiteralPath $stage) -or (Test-Path -LiteralPath $zip)){throw 'Package already exists; keep it or choose a new source commit.'}
 New-Item -ItemType Directory -Path $stage | Out-Null
-$files=@('LICENSE','THIRD_PARTY_NOTICES.md','README.md','CHANGELOG.md','docs/local-distribution.md','docs/support-matrix.md','docs/validation-0.5.0-alpha.1.md','docs/browser-integration.md','docs/collection-format.md','docs/validation-0.4.0-alpha.1.md','docs/validation-0.4.0-alpha.2.md')
+$files=@('LICENSE','THIRD_PARTY_NOTICES.md','README.md','CHANGELOG.md','docs/local-distribution.md','docs/support-matrix.md','docs/validation-0.5.0-alpha.1.md','docs/validation-0.5.0-alpha.2.md','docs/browser-integration.md','docs/collection-format.md','docs/validation-0.4.0-alpha.1.md','docs/validation-0.4.0-alpha.2.md')
 Copy-Item -LiteralPath $exe -Destination (Join-Path $stage 'QuickCheat.exe')
 foreach($file in $files){
  $target=Join-Path $stage $file
