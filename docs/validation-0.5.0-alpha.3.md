@@ -21,6 +21,9 @@ The first build compiled the new Dock code but linking failed (LNK1104): previou
 alpha.2 process PID 30408 remained alive after normal exit, with host/window gone.
 Hugo chose to end it manually; no forced process termination by the agent.
 This shutdown issue is recorded, not claimed fixed by the menu change.
+After launching alpha.3, Hugo confirmed opening and then closing it. Host/windows
+were gone but PID 18528 remained alive as well: normal-exit cleanup remains an
+open issue in alpha.3. Leave the app closed as requested by that user action.
 Existing screenshot helper is extended only to document the native menu.
 No automated tests added/executed; same build/Release path and existing user data.
 
