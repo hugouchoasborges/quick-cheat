@@ -37,7 +37,7 @@ void Theme::style(HWND window){
  DwmSetWindowAttribute(window,DWMWA_CAPTION_COLOR,&colors.background,sizeof(colors.background));DwmSetWindowAttribute(window,DWMWA_TEXT_COLOR,&colors.text,sizeof(colors.text));
  for(HWND child=GetWindow(window,GW_CHILD);child;child=GetWindow(child,GW_HWNDNEXT)){
  wchar_t cls[64]{};GetClassNameW(child,cls,64);SetWindowSubclass(child,widgetProc,91,reinterpret_cast<DWORD_PTR>(this));
- if(wcscmp(cls,L"Button")==0){SetWindowLongPtrW(child,GWL_STYLE,(GetWindowLongPtrW(child,GWL_STYLE)&~BS_TYPEMASK)|BS_OWNERDRAW);}
+ if(wcscmp(cls,L"Button")==0){auto type=GetWindowLongPtrW(child,GWL_STYLE)&BS_TYPEMASK;bool check=type==BS_CHECKBOX||type==BS_AUTOCHECKBOX||type==BS_3STATE||type==BS_AUTO3STATE;if(!check)SetWindowLongPtrW(child,GWL_STYLE,(GetWindowLongPtrW(child,GWL_STYLE)&~BS_TYPEMASK)|BS_OWNERDRAW);}
  if(wcscmp(cls,L"Edit")==0){SetWindowTheme(child,L"",L"");SetWindowLongPtrW(child,GWL_EXSTYLE,GetWindowLongPtrW(child,GWL_EXSTYLE)&~WS_EX_CLIENTEDGE);SendMessageW(child,EM_SETMARGINS,EC_LEFTMARGIN|EC_RIGHTMARGIN,MAKELPARAM(8,8));}
  if(wcscmp(cls,L"ComboBox")==0){SetWindowTheme(child,L"",L"");}
  if(wcscmp(cls,WC_LISTVIEWW)==0){ListView_SetBkColor(child,colors.background);ListView_SetTextBkColor(child,colors.background);ListView_SetTextColor(child,colors.text);auto header=ListView_GetHeader(child);if(header){SetWindowTheme(header,L"",L"");SetWindowSubclass(header,headerProc,92,reinterpret_cast<DWORD_PTR>(this));}}
@@ -50,6 +50,18 @@ LRESULT Theme::controlColor(UINT message,HDC dc,HWND widget){
  SetTextColor(dc,!IsWindowEnabled(widget)||caption?colors.muted:colors.text);SetBkMode(dc,editable?OPAQUE:TRANSPARENT);SetBkColor(dc,editable?colors.field:colors.background);
  if(wcscmp(cls,L"ListBox")==0||GetDlgCtrlID(widget)==6){SetBkColor(dc,colors.background);return reinterpret_cast<LRESULT>(background);}
  return reinterpret_cast<LRESULT>(editable?field:GetStockObject(NULL_BRUSH));
+}
+LRESULT Theme::drawCheckbox(NMCUSTOMDRAW* draw){
+ HWND control=draw->hdr.hwndFrom;auto type=GetWindowLongPtrW(control,GWL_STYLE)&BS_TYPEMASK;
+ if(highContrast||draw->dwDrawStage!=CDDS_PREPAINT||(type!=BS_CHECKBOX&&type!=BS_AUTOCHECKBOX&&type!=BS_3STATE&&type!=BS_AUTO3STATE))return CDRF_DODEFAULT;
+ HDC dc=draw->hdc;RECT rect=draw->rc;FillRect(dc,&rect,background);int saved=SaveDC(dc);UINT dpi=GetDpiForWindow(control);auto px=[&](int value){return MulDiv(value,dpi,96);};
+ bool enabled=IsWindowEnabled(control)!=FALSE,hot=(draw->uItemState&(CDIS_HOT|CDIS_SELECTED))!=0;LRESULT state=SendMessageW(control,BM_GETCHECK,0,0);bool checked=state!=BST_UNCHECKED;
+ int side=px(18),y=(rect.top+rect.bottom-side)/2;RECT box{rect.left+px(2),y,rect.left+px(2)+side,y+side};
+ rounded(dc,box,checked&&enabled?colors.accent:hot?colors.selection:colors.field,checked&&enabled?colors.accent:hot?colors.accent:colors.border,px(4));
+ if(checked){HPEN pen=CreatePen(PS_SOLID,std::max(1,px(2)),enabled?colors.accentText:colors.muted);auto previous=SelectObject(dc,pen);if(state==BST_INDETERMINATE){MoveToEx(dc,box.left+px(4),y+side/2,nullptr);LineTo(dc,box.right-px(4),y+side/2);}else{MoveToEx(dc,box.left+px(4),y+side/2,nullptr);LineTo(dc,box.left+px(8),y+side-px(5));LineTo(dc,box.right-px(3),y+px(4));}SelectObject(dc,previous);DeleteObject(pen);}
+ RECT label=rect;label.left=box.right+px(10);label.right-=px(3);SelectObject(dc,reinterpret_cast<HFONT>(SendMessageW(control,WM_GETFONT,0,0)));wchar_t text[256]{};GetWindowTextW(control,text,256);paintText(dc,text,label,enabled?colors.text:colors.muted);
+ if((draw->uItemState&CDIS_FOCUS)&&!(SendMessageW(control,WM_QUERYUISTATE,0,0)&UISF_HIDEFOCUS)){RECT focus=rect;InflateRect(&focus,-px(1),-px(2));SetTextColor(dc,colors.text);SetBkColor(dc,colors.background);DrawFocusRect(dc,&focus);}
+ RestoreDC(dc,saved);return CDRF_SKIPDEFAULT;
 }
 bool Theme::drawControl(DRAWITEMSTRUCT* item){
  if(item->CtlType!=ODT_BUTTON)return false;auto dc=item->hDC;RECT r=item->rcItem;bool enabled=IsWindowEnabled(item->hwndItem)!=FALSE;

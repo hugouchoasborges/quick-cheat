@@ -2,6 +2,10 @@
 #include "browser_context.hpp"
 #include "dock.hpp"
 namespace qc {
+std::wstring App::contextName(){
+ if(isBrowserExecutable(target.executable))return target.website.empty()?target.executable:target.website+L" — "+target.executable;
+ auto* profile=currentProfile();return profile?profile->name:target.name.empty()?L"No active application":target.name;
+}
 Profile* App::currentProfile(){
  if(!contextDirty)return hasContextProfile?&contextProfile:nullptr;contextDirty=false;contextProfile={};browserShortcutCount=browserWorkflowCount=0;
  auto* general=findProfile(store,target.executable);auto* site=target.website.empty()?nullptr:findProfile(store,target.executable+L"|"+target.website);hasContextProfile=general||site;if(!hasContextProfile)return nullptr;

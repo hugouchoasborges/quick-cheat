@@ -31,3 +31,5 @@ Gear beside PIN opens General in the same main window; tray Settings uses the sa
 
 ## Contextual Dock and websites (0.4 candidate)
 Native Windows Dock: ordered selected shortcuts, orientation, scale, opacity, grip position and collapse state; shows only for its foreground target and does not take focus when clicked. Website context is native UI Automation for Edge/Chrome, expressly chosen over extensions. Exact hostname per executable; browser content and website content displayed together. Browser-only fallback, fresh confirmation before site execution. Firefox and Android deferred. Local v4 + collection format2; candidate awaits acceptance.
+
+0.4.0-alpha.2: hostname-first browser heading, scrollbar-free dock paging, reorganized dock settings with native checkboxes, selected counts and explicit Apply. No schema changes; manual acceptance pending.

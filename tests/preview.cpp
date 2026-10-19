@@ -26,7 +26,7 @@ unsigned long long ticks(FILETIME time){ULARGE_INTEGER n{};n.LowPart=time.dwLowD
 }
 int wmain(int argc,wchar_t** argv){
  struct Apartment{HRESULT result=RoInitialize(RO_INIT_SINGLETHREADED);~Apartment(){if(SUCCEEDED(result))RoUninitialize();}} apartment;
- if(argc!=2)return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
+ if(argc!=2&&(argc!=3||wcscmp(argv[2],L"--dock-overflow")!=0))return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
  try {
  auto appExe=std::filesystem::absolute(argv[1]);auto output=appExe.parent_path().parent_path()/L"qa";std::filesystem::create_directories(output);
  auto data=output/(L"preview-"+std::to_wstring(GetCurrentProcessId()));qc::Store s;s.trigger.modifiers=7;
@@ -34,6 +34,7 @@ int wmain(int argc,wchar_t** argv){
  s.profiles.back().workflows={{L"Prepare a change for review",{L"Open the project folder and check the current branch.",L"Review the modified files in Source Control. Keep each change focused on one task.",L"Read the diff, write a clear commit message, and commit the change."}},{L"Find a symbol in the project",{L"Open the command palette.",L"Choose the symbol search command and type the name you want to find.",L"Select a result and review its surrounding code."}}};
  std::wstring demoImage,imageError;auto demoSource=appExe.parent_path().parent_path()/L"demo-markdown"/L"prompt-guide.png";if(std::filesystem::exists(demoSource)&&qc::importWorkflowImage(demoSource,data,demoImage,imageError))s.profiles.back().workflows[0].steps[0]=L"## Write a clear prompt\n\nDefine the **goal**, add *context*, then choose the format.\n\n- Keep the facts\n- Use three short bullets\n\n![Prompt anatomy]("+demoImage+L")\n\nUse `Ctrl+A` to select your draft. [Markdown guide](https://commonmark.org/help/).";
  s.profiles.front().dock.enabled=true;s.profiles.front().dock.shortcuts={0,2,4};
+ if(argc==3){auto& profile=s.profiles.front();while(profile.shortcuts.size()<64)profile.shortcuts.push_back({L"Demo action "+std::to_wstring(profile.shortcuts.size()+1),L"Demo",{MOD_CONTROL|MOD_ALT,'K'}});profile.dock.shortcuts.clear();for(size_t i=0;i<profile.shortcuts.size();++i)profile.dock.shortcuts.push_back(i);profile.dock.scale=200;}
  s.profiles.push_back({L"msedge.exe",L"Microsoft Edge (demo)",{{L"New tab",L"Tabs",{MOD_CONTROL,'T'}}}});
  s.profiles.push_back({L"msedge.exe",L"Example website (demo)",{{L"Example action",L"Page",{MOD_CONTROL|MOD_SHIFT,'K'}}},{{L"Read this page",{L"## Review\n\nRead the **page**, then follow its instructions."}}},L"example.com"});
  std::wstring error;if(!qc::saveStore(data/L"shortcuts.qc",s,error))throw std::runtime_error("Cannot save preview data");
@@ -45,7 +46,7 @@ int wmain(int argc,wchar_t** argv){
  target.start(L"\""+(appExe.parent_path()/L"qc_integration.exe").wstring()+L"\" --target");auto targetWindow=waitWindow(L"QuickCheatIntegrationTarget");SetForegroundWindow(targetWindow);pause(200);
  if(GetForegroundWindow()!=targetWindow)throw std::runtime_error("Cannot focus controlled target");
  for(auto mode:{qc::ThemeMode::Dark,qc::ThemeMode::Light,qc::ThemeMode::System}){
- SetForegroundWindow(targetWindow);pause(120);if(GetForegroundWindow()!=targetWindow)throw std::runtime_error("Controlled demo target lost foreground");
+ SetForegroundWindow(targetWindow);pause(120);if(GetForegroundWindow()!=targetWindow){wchar_t cls[100]{};GetClassNameW(GetForegroundWindow(),cls,100);std::wcerr<<L"Foreground class: "<<cls<<L"\\n";throw std::runtime_error("Controlled demo target lost foreground");}
  SendMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");SetWindowPos(GetAncestor(editor,GA_ROOT),nullptr,0,0,1120,860,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
  SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);pause(120);
  auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0-alpha.2 — 2026-10-19
+
+Candidate: browser headings now show hostname before executable (for example, chatgpt.com — msedge.exe), falling back to process only when the site is unknown. Dock overflow uses Previous/Next pages with no native scrollbars. Settings separates behavior and appearance from the ordered shortcut list, with native checkboxes for activation and collapsed state, selected counts and explicit Apply. Checkbox theming preserves native keyboard/accessibility behavior. Data formats remain unchanged. Manual acceptance pending; no automated tests added or run.
+
+
 ## 0.4.0-alpha.1 — 2026-10-18
 
 Candidate: contextual native Dock with ordered shortcuts, horizontal/vertical layout, grip dragging, collapse, scale and opacity. Settings adds a Dock tab with explicit Apply and pending-edit guards. Dock clicks retain application focus, and foreground changes hide irrelevant docks.

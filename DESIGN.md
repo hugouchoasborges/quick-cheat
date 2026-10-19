@@ -45,3 +45,6 @@ The footer Manage actions are replaced by an authored GDI gear directly left of 
 
 ## Dock and website context (0.4 candidate)
 Fourth Settings tab Dock keeps explicit Apply, ordered checkbox list, orientation/scale/opacity and pending-edit guards. Website... adds an exact-host profile under the selected browser; profile selector labels identify executable plus host. Popup shortcuts group Browser/category and hostname/category; workflow tree uses Browser and Website roots. Dock is a nonactivating native topmost strip with grip, collapse and shortcut buttons. No continuous redraw or browser polling. Ambiguous native address reads use browser-only content.
+
+## Dock refinements (0.4.0-alpha.2)
+Browser heading puts hostname before executable, falling back to process only. Dock overflow uses Previous/Next pages without scrollbars; orientation, selected order and nonactivating mouse handling remain. Settings uses a behavior/appearance column and a wider ordered shortcut column, with native auto-checkboxes for enable/collapsed, selection count, clear Apply and pending-edit feedback. Preserve native accessibility and Space behavior while theming checkbox paint.

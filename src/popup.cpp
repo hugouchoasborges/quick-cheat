@@ -89,7 +89,7 @@ void App::layoutPopup(){
 void App::refreshPopup(bool clearSearch){
  if(!popup||updatingPopup)return;syncCategoryStates();updatingPopup=true;pressedRow=-1;if(clearSearch)SetWindowTextW(search,L"");
  auto* profile=currentProfile();auto query=textOf(search);visibleRows.clear();SendMessageW(rows,WM_SETREDRAW,FALSE,0);ListView_DeleteAllItems(rows);ListView_RemoveAllGroups(rows);
- SetWindowTextW(heading,(profile?profile->name:target.name.empty()?L"No active application":target.name+(target.website.empty()?L"":L" — "+target.website)).c_str());
+ SetWindowTextW(heading,contextName().c_str());
  if(profile){for(size_t i=0;i<profile->shortcuts.size();++i)if(matchesShortcut(profile->shortcuts[i],query))visibleRows.push_back(i);
  std::stable_sort(visibleRows.begin(),visibleRows.end(),[&](size_t a,size_t b){return _wcsicmp(profile->shortcuts[a].category.c_str(),profile->shortcuts[b].category.c_str())<0;});
  }populateShortcutTiles();
