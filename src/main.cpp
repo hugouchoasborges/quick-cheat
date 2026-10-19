@@ -90,7 +90,7 @@ void App::showPopupNow(){
  if(!popup)createPopup();refreshPopup(true);positionPopup(true);layoutPopup();SetForegroundWindow(popup);SetFocus(settingsVisible&&editor?GetDlgItem(editor->window,settings::tabId(editor->page)):search);
 }
 void App::hidePopup(bool restore){pendingPopupOpen=false;if(pendingExecution){pendingExecution=false;if(browser)browser->clear();}if(!popup)return;syncCategoryStates();bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(workflowDetail)clearMarkdown(workflowDetail);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);if(dock)dock->refresh();}
-void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);if(dock)dock->themeChanged();}
+void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);if(editor&&editor->dockSettings)editor->dockSettings->themeChanged();if(dock)dock->themeChanged();}
 void App::execute(size_t index) {
  if(workflowsVisible||!shortcutVisible(static_cast<int>(index)))return;
  // Re-read actual foreground before consulting a potentially stale event.

@@ -13,6 +13,7 @@ struct Theme {
  void observe(HWND host);void stop();void resolve(ThemeMode mode);void style(HWND window);
  LRESULT controlColor(UINT message,HDC dc,HWND control);
  bool drawControl(DRAWITEMSTRUCT* item);
+ LRESULT drawCheckbox(NMCUSTOMDRAW* draw);
  static LRESULT CALLBACK widgetProc(HWND,UINT,WPARAM,LPARAM,UINT_PTR,DWORD_PTR);
  static LRESULT CALLBACK headerProc(HWND,UINT,WPARAM,LPARAM,UINT_PTR,DWORD_PTR);
 };

@@ -66,21 +66,21 @@ Choose **Add** to keep existing content and skip exact duplicates, or **Replace*
 
 See the [format and limits](docs/collection-format.md) and [acceptance checklist](docs/validation-0.3.0-alpha.1.md). This release adds local file sharing; community browsing and voting remain planned.
 
-## 0.4.0-alpha.1 candidate — Dock and websites
+## 0.4.0-alpha.2 candidate — Dock and websites
 
-The next candidate adds a native **Dock** for each application: check shortcuts, arrange their order, choose horizontal/vertical layout, scale and opacity, then Apply. The dock appears only over its foreground application, supports grip dragging and collapse/expand, and sends a shortcut without taking keyboard focus.
+The next candidate adds a native **Dock** for each application: check shortcuts, arrange their order, choose horizontal/vertical layout, scale and opacity, then Apply. Dock settings separates behavior and appearance from the ordered shortcut list, with checkboxes for activation and collapsed state plus a selected count. The dock appears only over its foreground application, supports grip dragging, collapse/expand and Previous/Next pages instead of scrollbars for oversized selections, and sends a shortcut without taking keyboard focus.
 
-![Contextual dock](docs/images/v0.4.0-alpha.1/dock-dark.png)
+![Contextual dock](docs/images/v0.4.0-alpha.2/dock-dark.png)
 
-![Dock settings](docs/images/v0.4.0-alpha.1/dock-settings-dark.png)
+![Dock settings](docs/images/v0.4.0-alpha.2/dock-settings-dark.png)
 
 **Edge and Chrome on Windows** can use website-specific shortcuts and workflows without an extension. Select the browser in Settings and choose **Website...** to create an exact-hostname profile. General browser content remains visible alongside the website's categories and workflow group. A configured website dock overrides the generic browser dock; otherwise the generic dock remains available.
 
 ![Website profile editor with fictional demo data](docs/images/v0.4.0-alpha.1/website-editor-light.png)
 
-Detection uses Windows UI Automation on a background worker, triggered by window/address events and popup activation. It reads only the address field, keeps only the hostname, and does not use the clipboard, download pages or maintain history. The popup waits for the bounded browser read before taking focus; website shortcut execution restores browser focus and confirms the hostname first. Unknown/ambiguous addresses fall back to browser content. Native accessibility cannot reliably identify private windows. Firefox and Android are not part of this candidate.
+Detection uses Windows UI Automation on a background worker, triggered by window/address events and popup activation. It reads only the address field, keeps only the hostname, and does not use the clipboard, download pages or maintain history. The browser heading shows the hostname first, such as **chatgpt.com — msedge.exe**, or only **msedge.exe** when the site is unknown. The popup waits for the bounded browser read before taking focus; website shortcut execution restores browser focus and confirms the hostname first. Unknown/ambiguous addresses fall back to browser content. Native accessibility cannot reliably identify private windows. Firefox and Android are not part of this candidate.
 
-See [browser integration and limits](docs/browser-integration.md) and the [manual acceptance checklist](docs/validation-0.4.0-alpha.1.md). Download above still points to the published 0.3 release; 0.4 awaits manual acceptance.
+See [browser integration and limits](docs/browser-integration.md) and the [manual acceptance checklist](docs/validation-0.4.0-alpha.2.md). Download above still points to the published 0.3 release; 0.4 awaits manual acceptance.
 
 ## Local data
 
