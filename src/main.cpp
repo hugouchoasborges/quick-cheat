@@ -4,6 +4,7 @@
 #include "dock.hpp"
 #include "browser_context.hpp"
 #include "settings.hpp"
+#include "community_window.hpp"
 #include <shellapi.h>
 #include <objbase.h>
 #include <roapi.h>
@@ -22,6 +23,7 @@ void CALLBACK contextEvent(HWINEVENTHOOK,DWORD event,HWND window,LONG object,LON
 }
 App::App()=default;
 App::~App() {
+ community.reset();
  syncCategoryStates();
  theme.stop();
  if(foregroundHook)UnhookWinEvent(foregroundHook);if(browserNameHook)UnhookWinEvent(browserNameHook);if(browserValueHook)UnhookWinEvent(browserValueHook);if(locationHook)UnhookWinEvent(locationHook);browser.reset();dock.reset();
@@ -61,7 +63,7 @@ void App::addTray() {
  wcscpy_s(n.szTip,L"Quick Cheat — Settings");trayAdded=Shell_NotifyIconW(NIM_ADD,&n)!=FALSE;
 }
 void App::trayMenu() {
- HMENU menu=CreatePopupMenu();AppendMenuW(menu,MF_STRING,CmdOpen,L"Show shortcuts");AppendMenuW(menu,MF_STRING,CmdManage,L"Settings...");
+ HMENU menu=CreatePopupMenu();AppendMenuW(menu,MF_STRING,CmdOpen,L"Show shortcuts");AppendMenuW(menu,MF_STRING,CmdManage,L"Settings...");AppendMenuW(menu,MF_STRING,CmdCommunity,L"Community collections...");
  AppendMenuW(menu,MF_STRING,CmdData,L"Open data folder");AppendMenuW(menu,MF_SEPARATOR,0,nullptr);AppendMenuW(menu,MF_STRING,CmdExit,L"Exit Quick Cheat");
  POINT p;GetCursorPos(&p);SetForegroundWindow(host);int command=TrackPopupMenu(menu,TPM_RETURNCMD|TPM_RIGHTBUTTON,p.x,p.y,0,host,nullptr);DestroyMenu(menu);
  if(command)PostMessageW(host,WM_COMMAND,command,0);PostMessageW(host,WM_NULL,0,0);
@@ -90,7 +92,7 @@ void App::showPopupNow(){
  if(!popup)createPopup();refreshPopup(true);positionPopup(true);layoutPopup();SetForegroundWindow(popup);SetFocus(settingsVisible&&editor?GetDlgItem(editor->window,settings::tabId(editor->page)):search);
 }
 void App::hidePopup(bool restore){pendingPopupOpen=false;if(pendingExecution){pendingExecution=false;if(browser)browser->clear();}if(!popup)return;syncCategoryStates();bool ownFocus=GetForegroundWindow()==popup;ShowWindow(popup,SW_HIDE);if(workflowDetail)clearMarkdown(workflowDetail);if(restore&&ownFocus&&targetAlive(target))SetForegroundWindow(target.window);if(dock)dock->refresh();}
-void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);if(editor&&editor->dockSettings)editor->dockSettings->themeChanged();if(dock)dock->themeChanged();}
+void App::applyTheme(){theme.resolve(store.theme);theme.style(popup);styleWorkflowPopup();if(editor)theme.style(editor->window);if(workflowEditor)theme.style(workflowEditor->window);if(editor&&editor->dockSettings)editor->dockSettings->themeChanged();if(dock)dock->themeChanged();if(community)community->themeChanged();}
 void App::execute(size_t index) {
  if(workflowsVisible||!shortcutVisible(static_cast<int>(index)))return;
  // Re-read actual foreground before consulting a potentially stale event.
@@ -130,6 +132,7 @@ LRESULT CALLBACK App::hostProc(HWND h,UINT msg,WPARAM w,LPARAM l) {
  case ThemeChanged:case WM_SETTINGCHANGE:case WM_SYSCOLORCHANGE:app->applyTheme();return 0;
  case TrayMessage:if(l==WM_RBUTTONUP||l==WM_CONTEXTMENU)app->trayMenu();else if(l==WM_LBUTTONDBLCLK)app->openEditor();return 0;
  case WM_COMMAND:switch(LOWORD(w)){case CmdOpen:app->togglePopup();break;case CmdManage:app->openEditor(0);break;
+ case CmdCommunity:if(!app->community)app->community=std::make_unique<CommunityWindow>(*app);app->community->show();break;
  case CmdData:ShellExecuteW(h,L"open",app->file.parent_path().c_str(),nullptr,nullptr,SW_SHOWNORMAL);break;case CmdExit:if(app->editor&&app->settingsVisible&&!app->editor->leavePage())break;PostQuitMessage(0);break;}return 0;
  case WM_CLOSE:if(!app->editor||!app->settingsVisible||app->editor->leavePage())PostQuitMessage(0);return 0;
  }return DefWindowProcW(h,msg,w,l);
@@ -143,6 +146,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  try { qc::App app;int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);
  if(argv){if(argc==3&&wcscmp(argv[1],L"--data-dir")==0)app.file=std::filesystem::path(argv[2])/L"shortcuts.qc";LocalFree(argv);}
  if(!app.start(instance))result=1;else {MSG message{};BOOL status=0;while((status=GetMessageW(&message,nullptr,0,0))>0) {
+ if(app.community&&app.community->dialogMessage(message))continue;
  if(app.settingsVisible&&app.editor&&IsWindowVisible(app.popup)&&IsWindowEnabled(app.editor->window)&&IsDialogMessageW(app.popup,&message)){if(message.message==WM_KEYDOWN&&message.wParam==VK_TAB&&app.editor)app.editor->revealFocus();continue;}
  if(app.popup&&IsWindowVisible(app.popup)&&GetForegroundWindow()==app.popup&&IsDialogMessageW(app.popup,&message)){if(message.message==WM_KEYDOWN&&message.wParam==VK_TAB&&app.editor)app.editor->revealFocus();continue;}
  TranslateMessage(&message);DispatchMessageW(&message);

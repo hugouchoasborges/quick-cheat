@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased — 0.6 catalog foundation
+## 0.6.0-alpha.1 — local source checkpoint, 2026-10-19
 
-Local read-only Portal API module and native catalog/cache/download/provenance library. No Portal deployment, account/write/vote endpoints, native catalog UI or installation wiring yet. The Windows executable remains the compact alpha.4 candidate; this entry does not declare a completed 0.6 release. See docs/community-api.md and the 0.6–0.9 execution plan.
+Adds Community collections to the tray menu: native search, current-application filter, paged list, author/license/content details, on-demand download and the existing Add/Replace import preview. Requests run on a cancellable worker; canceled generations cannot install. Successful imports record their source and original version. No requests on opening the window, foreground polling or automatic uploads. Public catalog and any-Google publishing/voting policy confirmed; first localization languages are English and Português (Brasil).
+
+Release SkipTests compiled the new C++ sources but linking was blocked by the existing residual alpha.4 process (LNK1104). The runnable executable remains alpha.4; runtime validation and fresh catalog screenshots are pending. The Portal module is not deployed, and accounts/publishing/votes/updates/localization remain unfinished. No automated tests added/run; no release published. See [evidence](docs/validation-0.6.0-alpha.1.md).
 
 ## 0.5.0-alpha.4 — 2026-10-19
 

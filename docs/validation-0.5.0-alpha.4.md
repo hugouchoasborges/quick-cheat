@@ -24,4 +24,8 @@ window; PIN/Close; search; Expand/Execute; Esc and keyboard focus; workflows wit
 long/image content; Settings Back and draft preservation; multiple DPI monitors.
 Known residual-process shutdown issue remains open; this is not a shutdown fix.
 
+Hugo subsequently confirmed that alpha.4 opened and that he closed it himself.
+The later absence of a window is therefore not evidence of startup failure.
+This confirmation does not cover all compact-layout acceptance checks.
+
 Library: [0.5.0-alpha.4 evidence](tgslib://fc607c940f74e3ce).

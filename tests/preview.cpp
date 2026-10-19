@@ -58,6 +58,7 @@ int wmain(int argc,wchar_t** argv){
  SendMessageW(popup,WM_COMMAND,107,0);auto tree=GetDlgItem(popup,7);auto root=TreeView_GetRoot(tree);auto overview=TreeView_GetNextSibling(tree,root);TreeView_SelectItem(tree,overview?overview:root);pause(120);capture(popup,output/(std::wstring(L"workflow-overview-")+name+L".bmp"));auto step=TreeView_GetChild(tree,root);TreeView_SelectItem(tree,step);pause(120);capture(popup,output/(std::wstring(L"workflow-popup-")+name+L".bmp"));SendMessageW(popup,WM_COMMAND,106,0);SendMessageW(popup,WM_COMMAND,110,0);SendMessageW(popup,WM_COMMAND,IDCANCEL,0);pause(120);auto dock=waitWindow(L"QuickCheatDock");capture(dock,output/(std::wstring(L"dock-")+name+L".bmp"));
  RECT dockRect{};GetWindowRect(dock,&dockRect);PostMessageW(dock,WM_CONTEXTMENU,reinterpret_cast<WPARAM>(dock),MAKELPARAM(dockRect.left+4,dockRect.top+12));
  auto dockMenu=waitWindow(L"#32768");pause(120);capture(dockMenu,output/(std::wstring(L"dock-menu-")+name+L".bmp"));PostMessageW(dock,WM_CANCELMODE,0,0);pause(120);
+ SendMessageW(host,WM_COMMAND,113,0);auto community=waitWindow(L"QuickCheatCommunity");pause(120);capture(community,output/(std::wstring(L"community-")+name+L".bmp"));SendMessageW(community,WM_CLOSE,0,0);
  }
  PostMessageW(host,WM_COMMAND,103,0);WaitForSingleObject(app.pi.hProcess,3000);PostMessageW(targetWindow,WM_CLOSE,0,0);WaitForSingleObject(target.pi.hProcess,3000);
  std::wcout<<L"Screenshots: "<<output.wstring()<<L'\n';return 0;

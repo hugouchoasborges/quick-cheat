@@ -146,7 +146,9 @@ Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that
 
 Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
 
-The local [0.6–0.9 execution plan](docs/plans/2026-10-19-community-through-beta.md) starts with a [versioned catalog API and native cache/download library](docs/community-api.md). This foundation is not deployed or connected to the desktop UI yet; it does not change the public release or imply that community/accounts/updates/localization are complete.
+The local [0.6–0.9 execution plan](docs/plans/2026-10-19-community-through-beta.md) starts with a [versioned catalog API and native cache/download library](docs/community-api.md). Source candidate **0.6.0-alpha.1** connects a native catalog window, available from the tray's **Community collections...** action, to on-demand search/download and Add/Replace installation preview. Linking is currently blocked by the residual alpha.4 process; the executable remains alpha.4 and new catalog screenshots/runtime validation are pending. The service is not deployed. See [evidence and manual checklist](docs/validation-0.6.0-alpha.1.md).
+
+The catalog will be public; publishing and voting will accept any Google account with separate community permissions. English and Português (Brasil) are the first planned interface languages. Accounts, publication, voting, collection updates and localization are still pending; no new public release is implied.
 
 ## License
 

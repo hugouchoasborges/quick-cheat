@@ -12,13 +12,14 @@ Future publication still needs applicable acceptance/request. SkipTests only.
 - [x] Read-only versioned API, bounded paging/filtering and immutable downloads.
 - [x] Compile native codec, HTTPS client, offline cache and validated preparation.
 - [x] Source/version/hash/baseline recording after confirmed installation.
-- [ ] Native catalog view, compatible suggestions and explicit Add/Replace preview.
-- [ ] Connect worker completion/cancellation to UI generation and draft guards.
+- [x] Implement native catalog view, current-app filter and Add/Replace wiring.
+- [x] Implement worker completion/cancellation generations and existing draft guards.
+- [ ] Validate native view, suggestions, cancellation and installation at runtime.
 - [ ] Register/deploy service after review; verify actual catalog and offline flow.
 - [ ] Record screenshots/evidence and request acceptance before release.
 
 ## 0.7 — accounts, publishing and votes
-- [ ] Resolve open Google-account policy versus existing authorized accounts.
+- [x] Hugo chose a public catalog; publishing/voting with any Google account.
 - [ ] Separate scoped community credentials from broad MCP apps-management tokens.
 - [ ] Implement browser sign-in/PKCE or device pairing, secure token storage/logout.
 - [ ] Publication preview and author rights/license declaration; version ownership.
@@ -35,7 +36,8 @@ Future publication still needs applicable acceptance/request. SkipTests only.
 - [ ] Manual/on-demand version checks first; choose later frequency with Hugo.
 
 ## 0.9 — localization and beta
-- [ ] Confirm first languages; English fallback and UI/content/layout separation.
+- [x] Hugo chose English and Português (Brasil) as the first languages.
+- [ ] English fallback and UI/content/layout separation.
 - [ ] Extract authored strings without translating user data; persist language.
 - [ ] Live refresh preserves drafts; recheck long labels, Unicode, keyboard and HC.
 - [ ] Revisit Windows/browser/DPI matrix, migration and measured resource budgets.

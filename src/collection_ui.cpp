@@ -28,11 +28,15 @@ void Editor::exportApplicationCollection(){
 void Editor::importApplicationCollection(){
  wchar_t source[32768]{};OPENFILENAMEW dialog{sizeof(dialog)};dialog.hwndOwner=window;dialog.lpstrTitle=L"Import application collection";dialog.lpstrFilter=L"Quick Cheat collections (*.quickcheat.json)\0*.quickcheat.json\0JSON files (*.json)\0*.json\0\0";dialog.lpstrFile=source;dialog.nMaxFile=32768;dialog.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
  if(!GetOpenFileNameW(&dialog))return;Collection collection;std::wstring error;if(!readCollection(source,collection,error)){app.error(error,window);return;}
- auto existing=std::find_if(app.store.profiles.begin(),app.store.profiles.end(),[&](const auto& profile){return sameProfile(profile,collection.profile);});int choice=previewCollection(window,collection,existing==app.store.profiles.end()?nullptr:&*existing);if(choice!=AddCollection&&choice!=ReplaceCollection)return;
- bool replace=choice==ReplaceCollection;if(replace&&MessageBoxW(window,L"Replace all shortcuts and workflows for this application? The previous library save will be kept as a backup.",L"Quick Cheat",MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON2)!=IDYES)return;
- Store candidate;CollectionImportCounts counts;if(!mergeCollection(app.store,collection,replace,candidate,counts,error)){app.error(error,window);return;}
- if(!leavePage())return;CollectionImageInstall images;if(!images.install(collection,app.file.parent_path(),error)){app.error(error,window);return;}if(!app.commit(std::move(candidate)))return;images.keep();
+ installCollection(collection);
+}
+bool Editor::installCollection(const Collection& collection){
+ std::wstring error;auto existing=std::find_if(app.store.profiles.begin(),app.store.profiles.end(),[&](const auto& profile){return sameProfile(profile,collection.profile);});int choice=previewCollection(window,collection,existing==app.store.profiles.end()?nullptr:&*existing);if(choice!=AddCollection&&choice!=ReplaceCollection)return false;
+ bool replace=choice==ReplaceCollection;if(replace&&MessageBoxW(window,L"Replace all shortcuts and workflows for this application? The previous library save will be kept as a backup.",L"Quick Cheat",MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON2)!=IDYES)return false;
+ Store candidate;CollectionImportCounts counts;if(!mergeCollection(app.store,collection,replace,candidate,counts,error)){app.error(error,window);return false;}
+ if(!leavePage())return false;CollectionImageInstall images;if(!images.install(collection,app.file.parent_path(),error)){app.error(error,window);return false;}if(!app.commit(std::move(candidate)))return false;images.keep();
  draft=app.store;auto imported=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const auto& profile){return sameProfile(profile,collection.profile);});profileIndex=static_cast<int>(imported-draft.profiles.begin());if(app.workflowEditor&&app.workflowEditor->window)ShowWindow(app.workflowEditor->window,SW_HIDE);refreshProfiles();updateWorkflowPage();layout();
  auto message=L"Imported "+std::to_wstring(counts.shortcuts)+L" shortcuts and "+std::to_wstring(counts.workflows)+L" workflows; skipped "+std::to_wstring(counts.duplicates)+L" exact duplicates.";SetWindowTextW(status,message.c_str());if(page==2&&app.workflowEditor)SetWindowTextW(app.workflowEditor->status,message.c_str());
+ return true;
 }
 }
