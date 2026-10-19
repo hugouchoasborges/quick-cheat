@@ -19,7 +19,7 @@ build/edge-context-build.log; isolated binary version 0.5.0-alpha.2.
 No automated tests added or run. Existing live app/data/drafts preserved.
 
 Manual validation after normal exit of the previous instance:
-1. Launch build/local-distribution/Release/QuickCheat.exe; confirm alpha.2 version.
+1. Launch build/Release/QuickCheat.exe; confirm alpha.2 version.
 2. In Edge, activate a normal HTTP(S) page with address bar unfocused. Open the
    popup by hotkey: expect hostname — msedge.exe, without needing a saved profile.
 3. Change tabs/sites/windows; verify header updates and website shortcuts.
@@ -27,7 +27,8 @@ Manual validation after normal exit of the previous instance:
    browser-only fallback. Close/reopen during confirmation; no stale execution.
 5. Run cumulative 0.4 and 0.5 alpha.1 acceptance, including Chrome and pinned popup.
 
-The old running executable is not replaced. Native end-to-end recognition remains
-pending until this corrected executable is launched; no acceptance inferred.
+The initial isolated build preserved the old running executable. Hugo subsequently
+requested the usual build/Release path for compilation and launch; this is now the
+user-facing build convention. Native end-to-end acceptance remains pending.
 
 Library: [0.5.0-alpha.2 evidence](tgslib://7e06deadd974f132).

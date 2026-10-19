@@ -3,6 +3,7 @@
 C++20, Win32, native Windows controls. Prioritize stability, performance and minimal memory. UI and code are English. MIT license.
 Raycast is the approved visual reference for popup and editor/settings. Support System, Light and Dark through documented Windows APIs. A single click selects a shortcut; double-click, Execute or Enter executes it. Keep the last valid external application context throughout Quick Cheat UI interaction; own windows, null identification and transient tray/menu windows must not clear it. Workflows are local reference guides, never automatic command sequences. PRODUCT.md and DESIGN.md record this scope and visual system.
 Gitflow: main contains delivered releases, develop integrates work, feature/* branches hold implementation, release/* prepare releases and hotfix/* fix delivered releases.
+User-facing builds and launches must use build/Release/QuickCheat.exe, preserving the existing desktop shortcut. Use scripts/build.ps1 -SkipTests without an alternate BuildDirectory. Exit normally before replacing a running executable; preserve drafts and never force-kill it.
 For every implemented version, create a child page under Apps > Quick Cheat in Hugo Library with decisions, changes, validation and limitations.
 Do not add frameworks, polling loops, online dependencies or cross-platform abstractions without a demonstrated need.
 
