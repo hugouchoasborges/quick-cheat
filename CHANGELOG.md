@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — 0.6 catalog foundation
+
+Local read-only Portal API module and native catalog/cache/download/provenance library. No Portal deployment, account/write/vote endpoints, native catalog UI or installation wiring yet. The Windows executable remains the compact alpha.4 candidate; this entry does not declare a completed 0.6 release. See docs/community-api.md and the 0.6–0.9 execution plan.
+
 ## 0.5.0-alpha.4 — 2026-10-19
 
 Local candidate: compact popup header combines context, search and icons in one row. Remove full-width header/footer dividers and redundant Escape button; retain keyboard Esc, count and inline Expand/Execute. Content starts 68 logical pixels earlier; reserve 30 fewer pixels at the bottom. Shared layout metrics cover shortcut details, workflows and Settings. Release SkipTests and isolated DEMO visual review completed; no automated tests added/run. Public release remains alpha.3; manual acceptance pending.

@@ -146,6 +146,8 @@ Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that
 
 Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
 
+The local [0.6–0.9 execution plan](docs/plans/2026-10-19-community-through-beta.md) starts with a [versioned catalog API and native cache/download library](docs/community-api.md). This foundation is not deployed or connected to the desktop UI yet; it does not change the public release or imply that community/accounts/updates/localization are complete.
+
 ## License
 
 [MIT](LICENSE). Markdown parsing uses [MD4C](THIRD_PARTY_NOTICES.md), also MIT licensed.
