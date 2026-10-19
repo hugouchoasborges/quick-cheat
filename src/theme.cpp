@@ -68,10 +68,12 @@ bool Theme::drawControl(DRAWITEMSTRUCT* item){
  bool primary=item->CtlID==105||item->CtlID==208||item->CtlID==405||GetPropW(item->hwndItem,L"QcSelected")!=nullptr;bool pressed=(item->itemState&ODS_SELECTED)!=0;bool hover=GetPropW(item->hwndItem,L"QcHover")!=nullptr;
  auto fill=primary&&enabled?colors.accent:pressed?colors.selection:hover?colors.selection:colors.panel;
  auto text=primary&&enabled?colors.accentText:enabled?colors.text:colors.muted;
- bool onPanel=item->CtlID==206||item->CtlID==207||item->CtlID==208||item->CtlID==209;
+ bool onPanel=item->CtlID==206||item->CtlID==207||item->CtlID==208||item->CtlID==209||GetPropW(item->hwndItem,L"QcCompactDock")!=nullptr;
  FillRect(dc,&r,onPanel?panel:background);
- rounded(dc,r,fill,primary&&enabled?colors.accent:colors.border,MulDiv(10,GetDpiForWindow(item->hwndItem),96));
- auto old=SelectObject(dc,reinterpret_cast<HFONT>(SendMessageW(item->hwndItem,WM_GETFONT,0,0)));wchar_t label[160]{};GetWindowTextW(item->hwndItem,label,160);
+ bool compact=GetPropW(item->hwndItem,L"QcCompactDock")!=nullptr;
+ rounded(dc,r,fill,primary&&enabled?colors.accent:colors.border,MulDiv(compact?4:10,GetDpiForWindow(item->hwndItem),96));
+ auto old=SelectObject(dc,reinterpret_cast<HFONT>(SendMessageW(item->hwndItem,WM_GETFONT,0,0)));wchar_t label[512]{};GetWindowTextW(item->hwndItem,label,512);
+ if(compact)if(auto arrow=GetPropW(item->hwndItem,L"QcDockArrow")){label[0]=arrow==reinterpret_cast<HANDLE>(1)?L'‹':L'›';label[1]=0;}
  if(item->CtlID==101||item->CtlID==110||item->CtlID==111||item->CtlID==112){
   UINT dpi=GetDpiForWindow(item->hwndItem);auto px=[&](int n){return MulDiv(n,dpi,96);};int cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2;
   auto color=item->CtlID==111&&enabled&&!highContrast?(dark?RGB(255,110,110):RGB(190,40,40)):text;
@@ -86,7 +88,7 @@ bool Theme::drawControl(DRAWITEMSTRUCT* item){
   else if(item->CtlID==111){line(-5,-5,6,6);line(5,-5,-6,6);}
   else{line(-5,-8,5,-8);line(-3,-8,-3,-2);line(3,-8,3,-2);line(-3,-2,-7,3);line(3,-2,7,3);line(-7,3,7,3);line(0,3,0,10);}
   SelectObject(dc,oldPen);DeleteObject(pen);
- }else paintText(dc,label,r,text,DT_SINGLELINE|DT_VCENTER|DT_CENTER);SelectObject(dc,old);
+ }else {RECT content=r;if(compact){int inset=static_cast<int>(reinterpret_cast<INT_PTR>(GetPropW(item->hwndItem,L"QcCompactDock")));InflateRect(&content,-inset,-inset);}paintText(dc,label,content,text,DT_SINGLELINE|DT_VCENTER|DT_CENTER|(compact?DT_NOPREFIX|DT_END_ELLIPSIS:0));}SelectObject(dc,old);
  if(item->itemState&ODS_FOCUS){InflateRect(&r,-3,-3);DrawFocusRect(dc,&r);}return true;
 }
 LRESULT CALLBACK Theme::widgetProc(HWND h,UINT msg,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR value){

@@ -33,24 +33,42 @@ void Dock::rebuild(const Profile& profile){
  if(font)DeleteObject(font);UINT effective=MulDiv(dpi,profile.dock.scale,100);font=CreateFontW(-MulDiv(12,effective,96),0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");
  MONITORINFO monitor{sizeof(monitor)};GetMonitorInfoW(MonitorFromWindow(app.target.window,MONITOR_DEFAULTTONEAREST),&monitor);
  int border=2*GetSystemMetricsForDpi(SM_CXBORDER,dpi),availableWidth=std::max<int>(1,monitor.rcWork.right-monitor.rcWork.left-border),availableHeight=std::max<int>(1,monitor.rcWork.bottom-monitor.rcWork.top-border);
- int pad=std::max(1,MulDiv(5,effective,96)),handle=std::max(1,MulDiv(24,effective,96)),height=std::max(1,std::min(MulDiv(38,effective,96),availableHeight-2*pad));
- int buttonWidth=std::max(1,std::min(MulDiv(180,effective,96),availableWidth-handle-pad*3));int maxRight{},maxBottom{};
- auto add=[&](const std::wstring& label,int id,int x,int y,int width,int h){HWND button=child(window,L"BUTTON",label.c_str(),BS_PUSHBUTTON,id,app.instance);MoveWindow(button,x,y,width,h,FALSE);SendMessageW(button,WM_SETFONT,reinterpret_cast<WPARAM>(font),FALSE);SetWindowSubclass(button,buttonProc,1,reinterpret_cast<DWORD_PTR>(this));buttons.push_back(button);maxRight=std::max(maxRight,x+width);maxBottom=std::max(maxBottom,y+h);return button;};
- std::vector<size_t> items;for(auto index:profile.dock.shortcuts)if(index<profile.shortcuts.size())items.push_back(index);
- std::vector<POINT> positions;int x=pad+handle*2+pad,y=pad;
- if(profile.dock.vertical){x=pad+handle;y+=height+pad;}
- for(size_t i=0;i<items.size();++i){if(profile.dock.vertical&&y+height+pad>availableHeight){y=pad;x+=buttonWidth+pad;}else if(!profile.dock.vertical&&x+buttonWidth+pad>availableWidth){x=pad+handle;y+=height+pad;}positions.push_back({x,y});if(profile.dock.vertical)y+=height+pad;else x+=buttonWidth+pad;}
- bool overflow=false;for(auto position:positions)if(position.x+buttonWidth+pad>availableWidth||position.y+height+pad>availableHeight)overflow=true;
- add(profile.dock.collapsed?L"+":L"−",Collapse,pad+handle,pad,handle,height);pageCount=1;
- size_t begin=0,end=items.size();
- if(overflow&&!profile.dock.collapsed){
-  int left=pad+handle,top=pad*2+height,columns=std::max(1,(availableWidth-left)/(buttonWidth+pad)),rows=std::max(1,(availableHeight-top)/(height+pad));size_t capacity=static_cast<size_t>(columns)*rows;
-  pageCount=(items.size()+capacity-1)/capacity;page=std::min(page,pageCount-1);begin=page*capacity;end=std::min(items.size(),begin+capacity);
-  int navX=pad+handle*2+pad,navWidth=std::max(1,std::min(MulDiv(100,effective,96),(availableWidth-navX-2*pad)/2));
-  EnableWindow(add(L"Previous",Previous,navX,pad,navWidth,height),page>0);EnableWindow(add(L"Next",Next,navX+navWidth+pad,pad,navWidth,height),page+1<pageCount);
-  for(size_t i=begin;i<end;++i){size_t offset=i-begin;int column=static_cast<int>(profile.dock.vertical?offset/rows:offset%columns),row=static_cast<int>(profile.dock.vertical?offset%rows:offset/columns);positions[i]={left+column*(buttonWidth+pad),top+row*(height+pad)};}
- }else page=0;
- if(!profile.dock.collapsed)for(size_t i=begin;i<end;++i){const auto& shortcut=profile.shortcuts[items[i]];auto text=shortcut.dockLabel.empty()?shortcut.title+L"  "+shortcutActionText(shortcut):shortcut.dockLabel;add(text,FirstShortcut+static_cast<int>(items[i]),positions[i].x,positions[i].y,buttonWidth,height);}
+ int pad=std::max(1,MulDiv(2,effective,96)),gap=pad,inset=std::max(1,MulDiv(5,effective,96)),handle=std::max(1,MulDiv(12,effective,96));
+ int left=pad+handle+gap;gripWidth=pad+handle;
+ HDC measure=GetDC(window);auto original=SelectObject(measure,font);TEXTMETRICW metrics{};GetTextMetricsW(measure,&metrics);
+ int height=std::max(1,std::min(static_cast<int>(metrics.tmHeight)+2*inset,profile.dock.vertical?std::max(1,(availableHeight-3*pad-gap)/2):std::max(1,availableHeight-2*pad)));
+ auto widthOf=[&](const std::wstring& label){SIZE size{};GetTextExtentPoint32W(measure,label.c_str(),static_cast<int>(label.size()),&size);return std::clamp(static_cast<int>(size.cx)+2*inset,1,std::max(1,availableWidth-left-pad));};
+ std::vector<size_t> items;std::vector<std::wstring> labels;std::vector<int> widths;
+ for(auto index:profile.dock.shortcuts)if(index<profile.shortcuts.size()){const auto& shortcut=profile.shortcuts[index];items.push_back(index);labels.push_back(shortcut.dockLabel.empty()?shortcut.title+L"  "+shortcutActionText(shortcut):shortcut.dockLabel);widths.push_back(widthOf(labels.back()));}
+ auto collapse=profile.dock.collapsed?L"+":L"−";int collapseWidth=widthOf(collapse),previousWidth=widthOf(L"‹"),nextWidth=widthOf(L"›");
+ SelectObject(measure,original);ReleaseDC(window,measure);
+ int maxRight{},maxBottom{};
+ auto add=[&](const std::wstring& label,int id,int x,int y,int width,int h){HWND button=child(window,L"BUTTON",label.c_str(),BS_PUSHBUTTON,id,app.instance);SetPropW(button,L"QcCompactDock",reinterpret_cast<HANDLE>(static_cast<INT_PTR>(inset)));MoveWindow(button,x,y,width,h,FALSE);SendMessageW(button,WM_SETFONT,reinterpret_cast<WPARAM>(font),FALSE);SetWindowSubclass(button,buttonProc,1,reinterpret_cast<DWORD_PTR>(this));buttons.push_back(button);maxRight=std::max(maxRight,x+width);maxBottom=std::max(maxBottom,y+h);return button;};
+ struct Placement{size_t item;int x,y,width;};using Page=std::vector<Placement>;
+ auto pack=[&](int headerEnd){
+  std::vector<Page> pages(1);int top=pad+height+gap,x=profile.dock.vertical?left:headerEnd,y=pad,columnWidth=profile.dock.vertical?headerEnd-left:0;
+  for(size_t i=0;i<items.size();++i){int width=widths[i],itemX=x;
+   if(profile.dock.vertical){
+    if(y+height+pad>availableHeight){x+=columnWidth+gap;y=pad;columnWidth=0;}
+    itemX=x==left&&y==pad?headerEnd:x;
+    if(itemX+width+pad>availableWidth&&x==left&&y==pad){y=top;itemX=x;}
+    if(itemX+width+pad>availableWidth){if(!pages.back().empty())pages.emplace_back();x=left;y=pad;columnWidth=headerEnd-left;itemX=headerEnd;if(itemX+width+pad>availableWidth){y=top;itemX=x;}}
+   }else{
+    if(x+width+pad>availableWidth){x=left;y+=height+gap;}
+    if(y+height+pad>availableHeight){
+     if(!pages.back().empty())pages.emplace_back();x=headerEnd;y=pad;
+     if(x+width+pad>availableWidth){if(top+height+pad<=availableHeight){x=left;y=top;}else width=std::max(1,availableWidth-x-pad);}
+    }
+    itemX=x;
+   }
+   pages.back().push_back({i,itemX,y,width});if(profile.dock.vertical){y+=height+gap;columnWidth=std::max(columnWidth,itemX-x+width);}else x+=width+gap;
+  }return pages;
+ };
+ int headerEnd=left+collapseWidth+gap;std::vector<Page> pages(1);bool navigation=false;
+ if(!profile.dock.collapsed){pages=pack(headerEnd);navigation=pages.size()>1;if(navigation)pages=pack(headerEnd+previousWidth+nextWidth+2*gap);}
+ pageCount=pages.size();page=std::min(page,pageCount-1);add(collapse,Collapse,left,pad,collapseWidth,height);
+ if(navigation){auto previous=add(L"Previous",Previous,headerEnd,pad,previousWidth,height),next=add(L"Next",Next,headerEnd+previousWidth+gap,pad,nextWidth,height);SetPropW(previous,L"QcDockArrow",reinterpret_cast<HANDLE>(1));SetPropW(next,L"QcDockArrow",reinterpret_cast<HANDLE>(2));EnableWindow(previous,page>0);EnableWindow(next,page+1<pageCount);}
+ for(const auto& placed:pages[page])add(labels[placed.item],FirstShortcut+static_cast<int>(items[placed.item]),placed.x,placed.y,placed.width,height);
  SetWindowLongPtrW(window,GWL_STYLE,GetWindowLongPtrW(window,GWL_STYLE)&~(WS_HSCROLL|WS_VSCROLL));
  SetWindowPos(window,nullptr,0,0,std::min(maxRight+pad,availableWidth)+border,std::min(maxBottom+pad,availableHeight)+border,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);app.theme.style(window);
  tips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP,0,0,0,0,window,nullptr,app.instance,nullptr);
@@ -108,7 +126,7 @@ LRESULT CALLBACK Dock::proc(HWND h,UINT m,WPARAM w,LPARAM l){
  case WM_CAPTURECHANGED:dock->dragging=false;return 0;
  case WM_DRAWITEM:dock->app.theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l));return TRUE;
  case WM_ERASEBKGND:{RECT rect;GetClientRect(h,&rect);FillRect(reinterpret_cast<HDC>(w),&rect,dock->app.theme.panel);return 1;}
- case WM_PAINT:{PAINTSTRUCT paint;auto dc=BeginPaint(h,&paint);RECT rect;GetClientRect(h,&rect);FillRect(dc,&rect,dock->app.theme.panel);RECT grip{0,0,MulDiv(24,dock->dpi,96),rect.bottom};paintText(dc,L"⠿",grip,dock->app.theme.colors.muted,DT_CENTER|DT_VCENTER|DT_SINGLELINE);EndPaint(h,&paint);return 0;}
+ case WM_PAINT:{PAINTSTRUCT paint;auto dc=BeginPaint(h,&paint);RECT rect;GetClientRect(h,&rect);FillRect(dc,&rect,dock->app.theme.panel);RECT grip{0,0,dock->gripWidth,rect.bottom};paintText(dc,L"⠿",grip,dock->app.theme.colors.muted,DT_CENTER|DT_VCENTER|DT_SINGLELINE);EndPaint(h,&paint);return 0;}
  }return DefWindowProcW(h,m,w,l);
 }
 }

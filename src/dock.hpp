@@ -8,7 +8,7 @@ namespace qc {
 struct App;
 class Dock {
  App& app;HWND window{},tips{};HFONT font{};std::vector<HWND> buttons;std::wstring key,renderKey;
- bool saving{},dragging{},menuOpen{};POINT dragStart{};RECT dragRect{};HWND targetWindow{};DWORD targetProcess{};UINT dpi{96};size_t page{},pageCount{1};
+ bool saving{},dragging{},menuOpen{};POINT dragStart{};RECT dragRect{};HWND targetWindow{};DWORD targetProcess{};UINT dpi{96};int gripWidth{14};size_t page{},pageCount{1};
  void rebuild(const Profile& profile);void savePosition();void toggleCollapsed();void execute(size_t index);void contextMenu(POINT point);
  void openShortcuts();
  static LRESULT CALLBACK buttonProc(HWND,UINT,WPARAM,LPARAM,UINT_PTR,DWORD_PTR);

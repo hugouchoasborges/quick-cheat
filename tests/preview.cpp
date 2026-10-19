@@ -28,7 +28,8 @@ int wmain(int argc,wchar_t** argv){
  struct Apartment{HRESULT result=RoInitialize(RO_INIT_SINGLETHREADED);~Apartment(){if(SUCCEEDED(result))RoUninitialize();}} apartment;
  bool communityOnly=argc==3&&wcscmp(argv[2],L"--community-only")==0;
  bool linksOnly=argc==3&&wcscmp(argv[2],L"--links-only")==0,formsOnly=communityOnly||linksOnly;
- if(argc!=2&&(argc!=3||(!formsOnly&&wcscmp(argv[2],L"--dock-overflow")!=0)))return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
+ bool dockOnly=argc==3&&(wcscmp(argv[2],L"--dock-only")==0||wcscmp(argv[2],L"--dock-vertical")==0||wcscmp(argv[2],L"--dock-overflow-only")==0);
+ if(argc!=2&&(argc!=3||(!formsOnly&&!dockOnly&&wcscmp(argv[2],L"--dock-overflow")!=0)))return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
  try {
  auto appExe=std::filesystem::absolute(argv[1]);auto output=appExe.parent_path().parent_path()/L"qa";std::filesystem::create_directories(output);
  auto data=output/(L"preview-"+std::to_wstring(GetCurrentProcessId()));qc::Store s;s.trigger.modifiers=7;
@@ -36,7 +37,9 @@ int wmain(int argc,wchar_t** argv){
  s.profiles.back().workflows={{L"Prepare a change for review",{L"Open the project folder and check the current branch.",L"Review the modified files in Source Control. Keep each change focused on one task.",L"Read the diff, write a clear commit message, and commit the change."}},{L"Find a symbol in the project",{L"Open the command palette.",L"Choose the symbol search command and type the name you want to find.",L"Select a result and review its surrounding code."}}};
  std::wstring demoImage,imageError;auto demoSource=appExe.parent_path().parent_path()/L"demo-markdown"/L"prompt-guide.png";if(std::filesystem::exists(demoSource)&&qc::importWorkflowImage(demoSource,data,demoImage,imageError))s.profiles.back().workflows[0].steps[0]=L"## Write a clear prompt\n\nDefine the **goal**, add *context*, then choose the format.\n\n- Keep the facts\n- Use three short bullets\n\n![Prompt anatomy]("+demoImage+L")\n\nUse `Ctrl+A` to select your draft. [Markdown guide](https://commonmark.org/help/).";
  s.profiles.front().dock.enabled=true;s.profiles.front().dock.shortcuts={0,2,4};
- if(argc==3&&!formsOnly){auto& profile=s.profiles.front();while(profile.shortcuts.size()<64)profile.shortcuts.push_back({L"Demo action "+std::to_wstring(profile.shortcuts.size()+1),L"Demo",{MOD_CONTROL|MOD_ALT,'K'}});profile.dock.shortcuts.clear();for(size_t i=0;i<profile.shortcuts.size();++i)profile.dock.shortcuts.push_back(i);profile.dock.scale=200;}
+ if(argc==3&&!formsOnly&&(!dockOnly||wcscmp(argv[2],L"--dock-overflow-only")==0)){auto& profile=s.profiles.front();while(profile.shortcuts.size()<64)profile.shortcuts.push_back({L"Demo action "+std::to_wstring(profile.shortcuts.size()+1),L"Demo",{MOD_CONTROL|MOD_ALT,'K'}});profile.dock.shortcuts.clear();for(size_t i=0;i<profile.shortcuts.size();++i)profile.dock.shortcuts.push_back(i);profile.dock.scale=200;}
+ if(dockOnly&&wcscmp(argv[2],L"--dock-vertical")==0)s.profiles.front().dock.vertical=true;
+ if(dockOnly&&wcscmp(argv[2],L"--dock-overflow-only")==0)for(size_t i=0;i<s.profiles.front().shortcuts.size();++i)s.profiles.front().shortcuts[i].title=L"Long label "+std::to_wstring(i+1)+L" "+std::wstring(190,L'W');
  s.profiles.push_back({L"msedge.exe",L"Microsoft Edge (demo)",{{L"New tab",L"Tabs",{MOD_CONTROL,'T'}}}});
  s.profiles.push_back({L"msedge.exe",L"Example website (demo)",{{L"Example action",L"Page",{MOD_CONTROL|MOD_SHIFT,'K'}}},{{L"Read this page",{L"## Review\n\nRead the **page**, then follow its instructions."}}},L"example.com"});
  s.profiles.front().shortcuts.front().dockLabel=L"Save";s.profiles.back().shortcuts.push_back({L"Open reference documentation",L"Links",{},L"https://example.com/docs/reference",L"Docs"});s.profiles.back().dock.enabled=true;s.profiles.back().dock.shortcuts={1};
@@ -53,6 +56,7 @@ int wmain(int argc,wchar_t** argv){
  SendMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");SetWindowPos(GetAncestor(editor,GA_ROOT),nullptr,0,0,MulDiv(1120,GetDpiForWindow(editor),96),MulDiv(860,GetDpiForWindow(editor),96),SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
  SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);pause(120);
  auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";
+ if(dockOnly){auto popup=GetAncestor(editor,GA_ROOT);SendMessageW(popup,WM_COMMAND,IDCANCEL,0);SetForegroundWindow(targetWindow);pause(200);if(GetForegroundWindow()!=targetWindow)throw std::runtime_error("Cannot focus controlled target for Dock capture");auto dock=waitWindow(L"QuickCheatDock");auto view=wcscmp(argv[2],L"--dock-vertical")==0?L"dock-vertical-":wcscmp(argv[2],L"--dock-overflow-only")==0?L"dock-overflow-":L"dock-horizontal-";capture(dock,output/(std::wstring(view)+name+L".bmp"));continue;}
  if(linksOnly){
   auto form=GetAncestor(editor,GA_ROOT);if(!GetPropW(GetDlgItem(form,110),L"QcSelected"))SendMessageW(form,WM_COMMAND,110,0);ShowWindow(form,SW_SHOWNOACTIVATE);pause(120);
   SendMessageW(editor,WM_COMMAND,221,0);SendMessageW(GetDlgItem(editor,200),CB_SETCURSEL,2,0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(200,CBN_SELCHANGE),0);SendMessageW(GetDlgItem(editor,202),WM_KEYDOWN,VK_HOME,0);SendMessageW(GetDlgItem(editor,202),WM_KEYDOWN,VK_DOWN,0);pause(120);capture(editor,output/(std::wstring(L"website-editor-")+name+L".bmp"));

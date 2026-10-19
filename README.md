@@ -68,7 +68,13 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
-The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.4 candidate** retains website URLs/Dock labels and adds Dock defaults; the public download remains v0.5.0-alpha.3.
+The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.5 candidate** also compacts the Dock; the public download remains v0.5.0-alpha.3.
+
+Local alpha.5 sizes each Dock button to its text with **5 px padding on every side**, following Windows DPI and Dock scale. Margins/gaps are 2 px, with a smaller grip, collapse control and page arrows. Both orientations preserve button order and paging; very long labels can ellipsize at the monitor boundary. See [evidence and manual checks](docs/validation-0.6.0-alpha.5.md).
+
+![Compact horizontal Dock — local alpha.5, DEMO](docs/images/v0.6.0-alpha.5/dock-horizontal-dark.png)
+
+![Compact vertical Dock — local alpha.5, DEMO](docs/images/v0.6.0-alpha.5/dock-vertical-dark.png)
 
 Local alpha.4: **double-click the Dock grip or free surface** to open Shortcuts for the current application/site. Buttons still execute on single click. New shortcuts saved in Settings enter the Dock selection automatically (up to 64), and new editor profiles enable Dock. Existing disabled profiles stay disabled; editing a deselected shortcut does not re-add it. Imported Dock choices stay unchanged. See [manual checklist](docs/validation-0.6.0-alpha.4.md). Layout/screenshots from alpha.3 remain representative.
 
