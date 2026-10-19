@@ -94,8 +94,9 @@ LRESULT CALLBACK CommunityWindow::proc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case WM_DPICHANGED:{auto* rect=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,rect->left,rect->top,rect->right-rect->left,rect->bottom-rect->top,SWP_NOZORDER|SWP_NOACTIVATE);self->themeChanged();self->layout();return 0;}
  case Completed:self->complete(w);return 0;
  case WM_COMMAND:switch(LOWORD(w)){case IDOK:self->request();break;case IDCANCEL:self->close();break;case Next:self->request(true);break;case Install:self->preview();break;case Cancel:self->cancel();break;}return 0;
- case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(l)->hwndFrom==self->rows&&reinterpret_cast<NMHDR*>(l)->code==LVN_ITEMCHANGED&&!self->busy)self->selection();break;
- case WM_CTLCOLORSTATIC:case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:return self->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));
+ case WM_NOTIFY:{auto* header=reinterpret_cast<NMHDR*>(l);if(header->idFrom==Current&&header->code==NM_CUSTOMDRAW)return self->app.theme.drawCheckbox(reinterpret_cast<NMCUSTOMDRAW*>(l));if(header->hwndFrom==self->rows&&header->code==LVN_ITEMCHANGED&&!self->busy)self->selection();break;}
+ case WM_CTLCOLORSTATIC:case WM_CTLCOLORBTN:{auto brush=self->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));return reinterpret_cast<HWND>(l)==self->details?brush:reinterpret_cast<LRESULT>(self->app.theme.background);}
+ case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:return self->app.theme.controlColor(msg,reinterpret_cast<HDC>(w),reinterpret_cast<HWND>(l));
  case WM_DRAWITEM:if(self->app.theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l)))return TRUE;break;
  case WM_ERASEBKGND:{RECT rect;GetClientRect(h,&rect);FillRect(reinterpret_cast<HDC>(w),&rect,self->app.theme.background);return 1;}
  }return DefWindowProcW(h,msg,w,l);

@@ -1,7 +1,7 @@
-# 0.6.0-alpha.1 — local source checkpoint
+# 0.6.0-alpha.1 — local candidate
 
-Public download remains v0.5.0-alpha.3. The installed Release executable remains
-0.5.0-alpha.4 because the new link failed; source/resource version is 0.6.0-alpha.1.
+Public download remains v0.5.0-alpha.3. The local Release executable and its
+resource version are 0.6.0-alpha.1 at build/Release/QuickCheat.exe.
 No promotion, publication, deployment or user-data installation was performed.
 
 ## Implemented source
@@ -20,16 +20,24 @@ No promotion, publication, deployment or user-data installation was performed.
 
 ## Evidence and limits
 
-`scripts/build.ps1 -SkipTests` compiled community_window.cpp and collection_ui.cpp.
-Link failed with LNK1104 against build/Release/QuickCheat.exe, held by residual
-PID 33632. Log: build/community-ui-build.log. Existing website_editor.cpp C4324
-alignment warning remains. No automated tests added or run.
+Initial link failed with LNK1104 because residual PID 33632 held the executable.
+Hugo manually ended it. `scripts/build.ps1 -SkipTests` then succeeded, including
+the final theme correction (build/community-ui-final-build.log). No warnings in
+that incremental build; earlier website_editor.cpp C4324 is not claimed fixed.
+No automated tests added or run.
 
-The DEMO capture helper now includes the idle catalog window, without networking.
-It has not been run against this candidate: screenshots and visual/runtime claims
-are pending until a successful link. No real API, import, cache or cancel behavior
-was exercised. Worker cancellation is cooperative and may wait for a network
-timeout; prompt shutdown is not proven. The earlier residual-process bug is open.
+Full DEMO capture completed (build/community-ui-preview-final.log); 36 fresh PNGs
+in docs/images/v0.6.0-alpha.1. A later full capture failed to restore its Dock
+target, so the final catalog captures used the narrower --community-only option
+(build/community-only-preview.log), successful in light/dark/system without network.
+Dark controls use existing native checkbox rendering/backgrounds. Catalog and
+popup visually inspected. Full-helper focus remains environment-sensitive.
+No real API, import, cache or cancel behavior was exercised. Cancellation may wait
+for network timeout; the earlier residual-process shutdown bug remains open.
+
+Real-data launch used the usual Release path (PID 20752). Hugo confirmed that it
+opened and he closed it himself. The later absence of host/windows is not evidence
+of startup failure. This confirms opening, not full catalog/install acceptance.
 
 ## Manual checks after building and deploying the service
 

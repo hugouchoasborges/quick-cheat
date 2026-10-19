@@ -12,7 +12,7 @@
 namespace {
 struct Child {PROCESS_INFORMATION pi{};~Child(){if(pi.hProcess){if(WaitForSingleObject(pi.hProcess,0)==WAIT_TIMEOUT)TerminateProcess(pi.hProcess,1);CloseHandle(pi.hProcess);CloseHandle(pi.hThread);}}void start(std::wstring cmd){STARTUPINFOW si{sizeof(si)};if(!CreateProcessW(nullptr,cmd.data(),nullptr,nullptr,FALSE,0,nullptr,nullptr,&si,&pi))throw std::runtime_error("Cannot launch child");}};
 void pause(int ms){std::this_thread::sleep_for(std::chrono::milliseconds(ms));}
-HWND waitWindow(const wchar_t* cls){for(int i=0;i<100;++i){HWND h=FindWindowW(cls,nullptr);if(!h)h=FindWindowExW(FindWindowW(L"QuickCheatPopup",nullptr),nullptr,cls,nullptr);if(h)return h;pause(40);}throw std::runtime_error("Window not found");}
+HWND waitWindow(const wchar_t* cls){for(int i=0;i<100;++i){HWND h=FindWindowW(cls,nullptr);if(!h)h=FindWindowExW(FindWindowW(L"QuickCheatPopup",nullptr),nullptr,cls,nullptr);if(h)return h;pause(40);}std::wcerr<<L"Capture window unavailable: "<<cls<<L'\n';throw std::runtime_error("Window not found");}
 void capture(HWND window,const std::filesystem::path& file){
  window=GetAncestor(window,GA_ROOT);RECT rect{};GetWindowRect(window,&rect);int width=rect.right-rect.left,height=rect.bottom-rect.top;
  HDC screen=GetDC(nullptr),dc=CreateCompatibleDC(screen);HBITMAP image=CreateCompatibleBitmap(screen,width,height);auto old=SelectObject(dc,image);RedrawWindow(window,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW);BOOL ok=PrintWindow(window,dc,2);SelectObject(dc,old);
@@ -26,7 +26,8 @@ unsigned long long ticks(FILETIME time){ULARGE_INTEGER n{};n.LowPart=time.dwLowD
 }
 int wmain(int argc,wchar_t** argv){
  struct Apartment{HRESULT result=RoInitialize(RO_INIT_SINGLETHREADED);~Apartment(){if(SUCCEEDED(result))RoUninitialize();}} apartment;
- if(argc!=2&&(argc!=3||wcscmp(argv[2],L"--dock-overflow")!=0))return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
+ bool communityOnly=argc==3&&wcscmp(argv[2],L"--community-only")==0;
+ if(argc!=2&&(argc!=3||(!communityOnly&&wcscmp(argv[2],L"--dock-overflow")!=0)))return 2;if(FindWindowW(L"QuickCheatHost",nullptr)){std::cerr<<"Exit Quick Cheat first\n";return 2;}
  try {
  auto appExe=std::filesystem::absolute(argv[1]);auto output=appExe.parent_path().parent_path()/L"qa";std::filesystem::create_directories(output);
  auto data=output/(L"preview-"+std::to_wstring(GetCurrentProcessId()));qc::Store s;s.trigger.modifiers=7;
@@ -34,7 +35,7 @@ int wmain(int argc,wchar_t** argv){
  s.profiles.back().workflows={{L"Prepare a change for review",{L"Open the project folder and check the current branch.",L"Review the modified files in Source Control. Keep each change focused on one task.",L"Read the diff, write a clear commit message, and commit the change."}},{L"Find a symbol in the project",{L"Open the command palette.",L"Choose the symbol search command and type the name you want to find.",L"Select a result and review its surrounding code."}}};
  std::wstring demoImage,imageError;auto demoSource=appExe.parent_path().parent_path()/L"demo-markdown"/L"prompt-guide.png";if(std::filesystem::exists(demoSource)&&qc::importWorkflowImage(demoSource,data,demoImage,imageError))s.profiles.back().workflows[0].steps[0]=L"## Write a clear prompt\n\nDefine the **goal**, add *context*, then choose the format.\n\n- Keep the facts\n- Use three short bullets\n\n![Prompt anatomy]("+demoImage+L")\n\nUse `Ctrl+A` to select your draft. [Markdown guide](https://commonmark.org/help/).";
  s.profiles.front().dock.enabled=true;s.profiles.front().dock.shortcuts={0,2,4};
- if(argc==3){auto& profile=s.profiles.front();while(profile.shortcuts.size()<64)profile.shortcuts.push_back({L"Demo action "+std::to_wstring(profile.shortcuts.size()+1),L"Demo",{MOD_CONTROL|MOD_ALT,'K'}});profile.dock.shortcuts.clear();for(size_t i=0;i<profile.shortcuts.size();++i)profile.dock.shortcuts.push_back(i);profile.dock.scale=200;}
+ if(argc==3&&!communityOnly){auto& profile=s.profiles.front();while(profile.shortcuts.size()<64)profile.shortcuts.push_back({L"Demo action "+std::to_wstring(profile.shortcuts.size()+1),L"Demo",{MOD_CONTROL|MOD_ALT,'K'}});profile.dock.shortcuts.clear();for(size_t i=0;i<profile.shortcuts.size();++i)profile.dock.shortcuts.push_back(i);profile.dock.scale=200;}
  s.profiles.push_back({L"msedge.exe",L"Microsoft Edge (demo)",{{L"New tab",L"Tabs",{MOD_CONTROL,'T'}}}});
  s.profiles.push_back({L"msedge.exe",L"Example website (demo)",{{L"Example action",L"Page",{MOD_CONTROL|MOD_SHIFT,'K'}}},{{L"Read this page",{L"## Review\n\nRead the **page**, then follow its instructions."}}},L"example.com"});
  std::wstring error;if(!qc::saveStore(data/L"shortcuts.qc",s,error))throw std::runtime_error("Cannot save preview data");
@@ -46,16 +47,19 @@ int wmain(int argc,wchar_t** argv){
  target.start(L"\""+(appExe.parent_path()/L"qc_integration.exe").wstring()+L"\" --target");auto targetWindow=waitWindow(L"QuickCheatIntegrationTarget");SetForegroundWindow(targetWindow);pause(200);
  if(GetForegroundWindow()!=targetWindow)throw std::runtime_error("Cannot focus controlled target");
  for(auto mode:{qc::ThemeMode::Dark,qc::ThemeMode::Light,qc::ThemeMode::System}){
- SetForegroundWindow(targetWindow);pause(120);if(GetForegroundWindow()!=targetWindow){wchar_t cls[100]{};GetClassNameW(GetForegroundWindow(),cls,100);std::wcerr<<L"Foreground class: "<<cls<<L"\\n";throw std::runtime_error("Controlled demo target lost foreground");}
+ if(!communityOnly){SetForegroundWindow(targetWindow);pause(120);if(GetForegroundWindow()!=targetWindow){wchar_t cls[100]{};GetClassNameW(GetForegroundWindow(),cls,100);std::wcerr<<L"Foreground class: "<<cls<<L"\\n";throw std::runtime_error("Controlled demo target lost foreground");}}
  SendMessageW(host,WM_COMMAND,101,0);auto editor=waitWindow(L"QuickCheatEditor");SetWindowPos(GetAncestor(editor,GA_ROOT),nullptr,0,0,1120,860,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
  SendMessageW(GetDlgItem(editor,214),CB_SETCURSEL,static_cast<UINT>(mode),0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(214,CBN_SELCHANGE),0);pause(120);
- auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
+ auto name=mode==qc::ThemeMode::Dark?L"dark":mode==qc::ThemeMode::Light?L"light":L"system";
+ if(communityOnly){SendMessageW(host,WM_COMMAND,113,0);auto community=waitWindow(L"QuickCheatCommunity");pause(120);capture(community,output/(std::wstring(L"community-")+name+L".bmp"));SendMessageW(community,WM_CLOSE,0,0);continue;}
+ capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
  capture(editor,output/(std::wstring(L"settings-general-")+name+L".bmp"));SendMessageW(editor,WM_COMMAND,221,0);pause(120);capture(editor,output/(std::wstring(L"editor-")+name+L".bmp"));
  SendMessageW(editor,WM_COMMAND,108,0);auto workflows=GetDlgItem(editor,230);SendMessageW(GetDlgItem(workflows,402),LB_SETCURSEL,0,0);SendMessageW(workflows,WM_COMMAND,MAKEWPARAM(402,LBN_SELCHANGE),0);pause(120);capture(editor,output/(std::wstring(L"workflow-editor-")+name+L".bmp"));SendMessageW(editor,WM_COMMAND,227,0);pause(120);capture(editor,output/(std::wstring(L"dock-settings-")+name+L".bmp"));SendMessageW(editor,WM_COMMAND,221,0);
  SendMessageW(GetDlgItem(editor,200),CB_SETCURSEL,2,0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(200,CBN_SELCHANGE),0);pause(120);capture(editor,output/(std::wstring(L"website-editor-")+name+L".bmp"));SendMessageW(GetDlgItem(editor,200),CB_SETCURSEL,0,0);SendMessageW(editor,WM_COMMAND,MAKEWPARAM(200,CBN_SELCHANGE),0);
  auto popup=waitWindow(L"QuickCheatPopup");SendMessageW(popup,WM_COMMAND,112,0);pause(120);capture(popup,output/(std::wstring(L"popup-")+name+L".bmp"));
  SendMessageW(popup,WM_COMMAND,110,0);pause(100);capture(popup,output/(std::wstring(L"popup-pinned-")+name+L".bmp"));
- SendMessageW(popup,WM_COMMAND,107,0);auto tree=GetDlgItem(popup,7);auto root=TreeView_GetRoot(tree);auto overview=TreeView_GetNextSibling(tree,root);TreeView_SelectItem(tree,overview?overview:root);pause(120);capture(popup,output/(std::wstring(L"workflow-overview-")+name+L".bmp"));auto step=TreeView_GetChild(tree,root);TreeView_SelectItem(tree,step);pause(120);capture(popup,output/(std::wstring(L"workflow-popup-")+name+L".bmp"));SendMessageW(popup,WM_COMMAND,106,0);SendMessageW(popup,WM_COMMAND,110,0);SendMessageW(popup,WM_COMMAND,IDCANCEL,0);pause(120);auto dock=waitWindow(L"QuickCheatDock");capture(dock,output/(std::wstring(L"dock-")+name+L".bmp"));
+ SendMessageW(popup,WM_COMMAND,107,0);auto tree=GetDlgItem(popup,7);auto root=TreeView_GetRoot(tree);auto overview=TreeView_GetNextSibling(tree,root);TreeView_SelectItem(tree,overview?overview:root);pause(120);capture(popup,output/(std::wstring(L"workflow-overview-")+name+L".bmp"));auto step=TreeView_GetChild(tree,root);TreeView_SelectItem(tree,step);pause(120);capture(popup,output/(std::wstring(L"workflow-popup-")+name+L".bmp"));SendMessageW(popup,WM_COMMAND,106,0);SendMessageW(popup,WM_COMMAND,110,0);SendMessageW(popup,WM_COMMAND,IDCANCEL,0);
+ SetForegroundWindow(targetWindow);pause(200);if(GetForegroundWindow()!=targetWindow)throw std::runtime_error("Cannot restore controlled demo target for dock capture");auto dock=waitWindow(L"QuickCheatDock");capture(dock,output/(std::wstring(L"dock-")+name+L".bmp"));
  RECT dockRect{};GetWindowRect(dock,&dockRect);PostMessageW(dock,WM_CONTEXTMENU,reinterpret_cast<WPARAM>(dock),MAKELPARAM(dockRect.left+4,dockRect.top+12));
  auto dockMenu=waitWindow(L"#32768");pause(120);capture(dockMenu,output/(std::wstring(L"dock-menu-")+name+L".bmp"));PostMessageW(dock,WM_CANCELMODE,0,0);pause(120);
  SendMessageW(host,WM_COMMAND,113,0);auto community=waitWindow(L"QuickCheatCommunity");pause(120);capture(community,output/(std::wstring(L"community-")+name+L".bmp"));SendMessageW(community,WM_CLOSE,0,0);

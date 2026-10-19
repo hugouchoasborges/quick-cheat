@@ -68,9 +68,9 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
-Local **0.5.0-alpha.4 candidate** compacts the popup into a single context/search/icon row and inline bottom actions, leaving more room for content. See [validation](docs/validation-0.5.0-alpha.4.md); the public download remains alpha.3.
+The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.1 candidate** retains it; the public download remains alpha.3.
 
-![Compact native popup — local alpha.4 candidate](docs/images/v0.5.0-alpha.4/popup-dark.png)
+![Compact native popup — local 0.6 candidate, DEMO data](docs/images/v0.6.0-alpha.1/popup-dark.png)
 
 **0.5.0-alpha.3** adds a right-click menu on the Dock grip: Enable Dock, Orientation, Scale, Opacity and Settings. Values save immediately for the displayed profile; Settings opens its Dock configuration. See [release notes and known shutdown limitation](docs/releases/0.5.0-alpha.3.md) and [validation](docs/validation-0.5.0-alpha.3.md).
 
@@ -146,7 +146,9 @@ Run `./scripts/create-desktop-shortcut.ps1` to create a desktop shortcut to that
 
 Development uses Gitflow: `develop`, `feature/*`, `release/*` and `hotfix/*`. `main` tracks published releases.
 
-The local [0.6–0.9 execution plan](docs/plans/2026-10-19-community-through-beta.md) starts with a [versioned catalog API and native cache/download library](docs/community-api.md). Source candidate **0.6.0-alpha.1** connects a native catalog window, available from the tray's **Community collections...** action, to on-demand search/download and Add/Replace installation preview. Linking is currently blocked by the residual alpha.4 process; the executable remains alpha.4 and new catalog screenshots/runtime validation are pending. The service is not deployed. See [evidence and manual checklist](docs/validation-0.6.0-alpha.1.md).
+The local [0.6–0.9 execution plan](docs/plans/2026-10-19-community-through-beta.md) starts with a [versioned catalog API and native cache/download library](docs/community-api.md). Candidate **0.6.0-alpha.1** connects a native catalog window, available from the tray's **Community collections...** action, to on-demand search/download and Add/Replace installation preview. Release SkipTests and DEMO captures completed in the existing build/Release path. The service is not deployed; actual catalog searches and installation still need validation. See [evidence and manual checklist](docs/validation-0.6.0-alpha.1.md).
+
+![Native community catalog — local candidate, idle window without network](docs/images/v0.6.0-alpha.1/community-dark.png)
 
 The catalog will be public; publishing and voting will accept any Google account with separate community permissions. English and Português (Brasil) are the first planned interface languages. Accounts, publication, voting, collection updates and localization are still pending; no new public release is implied.
 
