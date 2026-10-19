@@ -29,7 +29,7 @@ void Editor::addWebsite(){
  struct alignas(DWORD) Template{DLGTEMPLATE dialog{};WORD menu{},windowClass{};wchar_t title[20]{L"Add website"};} dialog;
  dialog.dialog.style=WS_POPUP|WS_CAPTION|WS_SYSMENU|DS_MODALFRAME|DS_CENTER;dialog.dialog.cx=300;dialog.dialog.cy=112;
  WebsitePrompt prompt{app,app.target.executable==executable?app.target.website:L""};if(DialogBoxIndirectParamW(app.instance,&dialog.dialog,GetAncestor(window,GA_ROOT),websiteProc,reinterpret_cast<LPARAM>(&prompt))!=IDOK)return;
- Profile added{executable,prompt.value,{},{},prompt.value};auto found=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const auto& profile){return sameProfile(profile,added);});
+ Profile added{executable,prompt.value,{},{},prompt.value};added.dock.enabled=true;auto found=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const auto& profile){return sameProfile(profile,added);});
  if(found!=draft.profiles.end()){int index=static_cast<int>(found-draft.profiles.begin());if(selectProfile(index))SendMessageW(profiles,CB_SETCURSEL,index,0);return;}
  auto previous=draft;draft.profiles.push_back(std::move(added));if(!persist()){draft=std::move(previous);return;}profileIndex=static_cast<int>(draft.profiles.size()-1);refreshProfiles();updateWorkflowPage();layout();
 }

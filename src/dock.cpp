@@ -19,7 +19,7 @@ void Dock::refresh(){
  if(!profile)profile=findProfile(app.store,app.target.executable);
  if(!profile||!profile->dock.enabled||profile->dock.shortcuts.empty()){hide();return;}
  if(key!=profileKey(*profile))page=0;key=profileKey(*profile);targetWindow=app.target.window;targetProcess=app.target.process;
- if(!window){WNDCLASSW cls{};cls.hInstance=app.instance;cls.lpfnWndProc=proc;cls.lpszClassName=L"QuickCheatDock";cls.hCursor=LoadCursorW(nullptr,IDC_SIZEALL);RegisterClassW(&cls);
+ if(!window){WNDCLASSW cls{};cls.style=CS_DBLCLKS;cls.hInstance=app.instance;cls.lpfnWndProc=proc;cls.lpszClassName=L"QuickCheatDock";cls.hCursor=LoadCursorW(nullptr,IDC_SIZEALL);RegisterClassW(&cls);
  window=CreateWindowExW(WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE|WS_EX_TOPMOST|WS_EX_LAYERED,cls.lpszClassName,L"Quick Cheat dock",WS_POPUP|WS_BORDER,0,0,1,1,nullptr,nullptr,app.instance,this);if(!window)return;}
  dpi=GetDpiForWindow(app.target.window);MONITORINFO work{sizeof(work)};GetMonitorInfoW(MonitorFromWindow(app.target.window,MONITOR_DEFAULTTONEAREST),&work);std::wstring stamp=key+L"/"+std::to_wstring(dpi)+L"/"+std::to_wstring(profile->dock.scale)+L"/"+std::to_wstring(profile->dock.vertical)+L"/"+std::to_wstring(profile->dock.collapsed)+L"/"+std::to_wstring(work.rcWork.right-work.rcWork.left)+L"/"+std::to_wstring(work.rcWork.bottom-work.rcWork.top);for(auto index:profile->dock.shortcuts)if(index<profile->shortcuts.size()){auto& shortcut=profile->shortcuts[index];stamp+=L"/"+std::to_wstring(index)+L":"+std::to_wstring(shortcut.title.size())+L":"+shortcut.title+shortcutActionText(shortcut)+shortcut.url+L"/"+shortcut.dockLabel;}if(stamp!=renderKey){rebuild(*profile);renderKey=std::move(stamp);}
  RECT target{};GetWindowRect(app.target.window,&target);RECT rect{};GetWindowRect(window,&rect);int width=rect.right-rect.left,height=rect.bottom-rect.top;
@@ -64,6 +64,16 @@ void Dock::execute(size_t index){
  if(!profile->website.empty()&&profile->website!=app.target.website)return;
  app.runShortcut(profile->shortcuts[index],profile->website);
 }
+void Dock::openShortcuts(){
+ if(app.target.window!=targetWindow||app.target.process!=targetProcess||GetForegroundWindow()!=targetWindow||!targetAlive(app.target))return;
+ auto expected=app.target;
+ if(app.settingsVisible){app.closeSettings();if(app.settingsVisible)return;}
+ if(app.target.window!=expected.window||app.target.process!=expected.process||!targetAlive(expected))return;
+ if(GetForegroundWindow()!=expected.window){DWORD process{};GetWindowThreadProcessId(GetForegroundWindow(),&process);if(process!=GetCurrentProcessId())return;SetForegroundWindow(expected.window);if(GetForegroundWindow()!=expected.window)return;}
+ app.workflowsVisible=false;if(app.pendingPopupOpen)return;
+ if(app.popup&&IsWindowVisible(app.popup))app.hidePopup(false);
+ app.togglePopup();
+}
 LRESULT CALLBACK Dock::buttonProc(HWND h,UINT m,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR){
  constexpr wchar_t pressed[]=L"QcDockPressed";
  switch(m){
@@ -92,8 +102,9 @@ LRESULT CALLBACK Dock::proc(HWND h,UINT m,WPARAM w,LPARAM l){
  case WM_CANCELMODE:if(dock->menuOpen)EndMenu();dock->dragging=false;if(GetCapture()==h)ReleaseCapture();return 0;
  case WM_COMMAND:if(HIWORD(w)==BN_CLICKED){if(LOWORD(w)==Collapse)dock->toggleCollapsed();else if(LOWORD(w)==Previous||LOWORD(w)==Next){if(LOWORD(w)==Previous&&dock->page>0)--dock->page;else if(LOWORD(w)==Next&&dock->page+1<dock->pageCount)++dock->page;dock->renderKey.clear();dock->refresh();}else if(LOWORD(w)>=FirstShortcut)dock->execute(LOWORD(w)-FirstShortcut);}return 0;
  case WM_LBUTTONDOWN:if(GetForegroundWindow()!=dock->targetWindow)return 0;dock->dragging=true;GetCursorPos(&dock->dragStart);GetWindowRect(h,&dock->dragRect);SetCapture(h);return 0;
+ case WM_LBUTTONDBLCLK:dock->dragging=false;if(GetCapture()==h)ReleaseCapture();dock->openShortcuts();return 0;
  case WM_MOUSEMOVE:if(dock->dragging){POINT cursor;GetCursorPos(&cursor);SetWindowPos(h,nullptr,dock->dragRect.left+cursor.x-dock->dragStart.x,dock->dragRect.top+cursor.y-dock->dragStart.y,0,0,SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);}return 0;
- case WM_LBUTTONUP:if(dock->dragging){dock->dragging=false;ReleaseCapture();dock->savePosition();dock->refresh();}return 0;
+ case WM_LBUTTONUP:if(dock->dragging){dock->dragging=false;ReleaseCapture();RECT current{};if(GetWindowRect(h,&current)&&(current.left!=dock->dragRect.left||current.top!=dock->dragRect.top))dock->savePosition();dock->refresh();}return 0;
  case WM_CAPTURECHANGED:dock->dragging=false;return 0;
  case WM_DRAWITEM:dock->app.theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l));return TRUE;
  case WM_ERASEBKGND:{RECT rect;GetClientRect(h,&rect);FillRect(reinterpret_cast<HDC>(w),&rect,dock->app.theme.panel);return 1;}

@@ -19,7 +19,7 @@ void Editor::show() {
  draft=app.store;
  if(!app.target.executable.empty()) {
  auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==app.target.executable&&p.website==app.target.website;});
- if(it==draft.profiles.end()&&draft.profiles.size()<256){draft.profiles.push_back({app.target.executable,app.target.website.empty()?app.target.name:app.target.website,{},{},app.target.website});profileIndex=static_cast<int>(draft.profiles.size()-1);}else if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());
+ if(it==draft.profiles.end()&&draft.profiles.size()<256){draft.profiles.push_back({app.target.executable,app.target.website.empty()?app.target.name:app.target.website,{},{},app.target.website});draft.profiles.back().dock.enabled=true;profileIndex=static_cast<int>(draft.profiles.size()-1);}else if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());
  }
  refreshProfiles();SetWindowTextW(trigger,formatChord(draft.trigger).c_str());SendMessageW(themeSelect,CB_SETCURSEL,static_cast<UINT>(draft.theme),0);SetWindowTextW(status,L"Stored on this computer. Select a shortcut to edit, or create a new one.");
  updateWorkflowPage();app.theme.style(window);ShowWindow(window,SW_SHOW);layout();
@@ -46,7 +46,7 @@ void Editor::addProfile() {
  wchar_t file[32768]{};OPENFILENAMEW dialog{sizeof(dialog)};dialog.hwndOwner=window;dialog.lpstrFilter=L"Applications (*.exe)\0*.exe\0\0";dialog.lpstrFile=file;dialog.nMaxFile=32768;dialog.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
  if(!GetOpenFileNameW(&dialog))return;auto exe=appKey(file);
  auto it=std::find_if(draft.profiles.begin(),draft.profiles.end(),[&](const Profile& p){return p.executable==exe&&p.website.empty();});
- if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());else if(draft.profiles.size()<256){draft.profiles.push_back({exe,exe.substr(0,exe.size()-4),{}});profileIndex=static_cast<int>(draft.profiles.size()-1);}else{app.error(L"The maximum of 256 application profiles has been reached.",window);return;}
+ if(it!=draft.profiles.end())profileIndex=static_cast<int>(it-draft.profiles.begin());else if(draft.profiles.size()<256){draft.profiles.push_back({exe,exe.substr(0,exe.size()-4),{}});draft.profiles.back().dock.enabled=true;profileIndex=static_cast<int>(draft.profiles.size()-1);}else{app.error(L"The maximum of 256 application profiles has been reached.",window);return;}
  if(!persist())draft=app.store;refreshProfiles();
 }
 bool Editor::persist(){if(!app.commit(draft))return false;SetWindowTextW(status,L"Saved locally.");updateCollectionActions();return true;}
@@ -57,9 +57,10 @@ void Editor::saveShortcut() {
  else{auto chord=parseChord(textOf(keys));if(!chord){app.error(L"Enter a combination such as Ctrl+S, Ctrl+Shift+F10 or Alt+Enter. Use Plus for the + key.",window);return;}s.chord=*chord;if(chord->key==draft.trigger.key&&chord->modifiers==draft.trigger.modifiers){app.error(L"This combination is reserved for Quick Cheat activation. Choose another shortcut or change activation.",window);return;}}
  auto original=draft;
  auto& shortcuts=draft.profiles[profileIndex].shortcuts;
- if(shortcutIndex>=0)shortcuts[shortcutIndex]=std::move(s);else shortcuts.push_back(std::move(s));
+ bool dockFull=false;
+ if(shortcutIndex>=0)shortcuts[shortcutIndex]=std::move(s);else {shortcuts.push_back(std::move(s));auto& dock=draft.profiles[profileIndex].dock;if(dock.shortcuts.size()<64)dock.shortcuts.push_back(shortcuts.size()-1);else dockFull=true;}
  if(!validStore(draft)){draft=std::move(original);app.error(L"Add a description (up to 240 characters) and a category (up to 80 characters). The profile supports up to 2048 shortcuts.",window);return;}
- if(!persist()){draft=std::move(original);return;}refreshList();
+ if(!persist()){draft=std::move(original);return;}refreshList();if(dockFull)SetWindowTextW(status,L"Saved. The Dock already has 64 shortcuts; choose its buttons in Settings > Dock.");
 }
 void Editor::deleteShortcut(){if(profileIndex<0||shortcutIndex<0)return;if(MessageBoxW(window,L"Delete the selected shortcut?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;removeDockShortcut(draft.profiles[profileIndex],static_cast<size_t>(shortcutIndex));auto& s=draft.profiles[profileIndex].shortcuts;s.erase(s.begin()+shortcutIndex);if(!persist())draft=std::move(old);refreshList();}
 void Editor::deleteProfile(){if(profileIndex<0)return;if(MessageBoxW(window,L"Delete this application profile, all its shortcuts and workflows?",L"Quick Cheat",MB_YESNO|MB_ICONQUESTION)!=IDYES)return;auto old=draft;draft.profiles.erase(draft.profiles.begin()+profileIndex);if(!persist())draft=std::move(old);profileIndex=-1;refreshProfiles();}

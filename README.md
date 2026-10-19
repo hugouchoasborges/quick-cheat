@@ -68,7 +68,9 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
-The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.3 candidate** adds website URLs and Dock labels; the public download remains alpha.3.
+The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.4 candidate** retains website URLs/Dock labels and adds Dock defaults; the public download remains v0.5.0-alpha.3.
+
+Local alpha.4: **double-click the Dock grip or free surface** to open Shortcuts for the current application/site. Buttons still execute on single click. New shortcuts saved in Settings enter the Dock selection automatically (up to 64), and new editor profiles enable Dock. Existing disabled profiles stay disabled; editing a deselected shortcut does not re-add it. Imported Dock choices stay unchanged. See [manual checklist](docs/validation-0.6.0-alpha.4.md). Layout/screenshots from alpha.3 remain representative.
 
 On a website profile, choose **Open URL**, enter a full HTTP(S) address and save. Execute or a Dock click opens it in the **same tab of the active browser**, after checking the source website. **Dock label (optional)** changes only the Dock button text; leave empty for the original title/action text. Add the saved action through Settings > Dock as usual. See [validation](docs/validation-0.6.0-alpha.3.md).
 
