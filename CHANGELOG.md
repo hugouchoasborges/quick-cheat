@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0-alpha.2 — 2026-10-19
+
+Prerelease authorized by Hugo on 2026-10-19 after confirming website recognition in Edge and the contextual Dock. Includes the earlier 0.4 Dock/website work, now delivered after public 0.3.0-alpha.2. Increases bounded native browser-chrome traversal from 128 to 512 elements: observed Edge 155 exceeds the previous completion budget. The 400 ms deadline, focused/ambiguous field rejection, renderer exclusion and execution confirmation remain. New versioned DEMO screenshots include Dock, settings and overflow pagination. Packages use build/Release, include release notes/screenshots/licenses, source metadata and SHA-256. Broader support/performance validation remains open; no automated tests added or run.
+
+## 0.5.0-alpha.1 — 2026-10-19
+
+Local engineering candidate, not accepted or published. BuildDirectory isolates compilation from the running development build. Local x64 Release packaging requires clean source and includes an explicit executable/documentation/license allowlist, commit/toolchain metadata and SHA-256 manifests. Added support matrix, controlled measurement protocol and recovery instructions. Windows/browser minimum versions and resource budgets remain unconfirmed. Runtime/UI/data formats retain the 0.4 alpha.2 behavior; cumulative 0.4 acceptance remains pending. No automated tests added or run.
+
 ## 0.4.0-alpha.2 — 2026-10-19
 
 Candidate: browser headings now show hostname before executable (for example, chatgpt.com — msedge.exe), falling back to process only when the site is unknown. Dock overflow uses Previous/Next pages with no native scrollbars. Settings separates behavior and appearance from the ordered shortcut list, with native checkboxes for activation and collapsed state, selected counts and explicit Apply. Checkbox theming preserves native keyboard/accessibility behavior. Data formats remain unchanged. Manual acceptance pending; no automated tests added or run.
