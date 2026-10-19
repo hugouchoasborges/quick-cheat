@@ -68,6 +68,10 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
+Local **0.5.0-alpha.4 candidate** compacts the popup into a single context/search/icon row and inline bottom actions, leaving more room for content. See [validation](docs/validation-0.5.0-alpha.4.md); the public download remains alpha.3.
+
+![Compact native popup — local alpha.4 candidate](docs/images/v0.5.0-alpha.4/popup-dark.png)
+
 **0.5.0-alpha.3** adds a right-click menu on the Dock grip: Enable Dock, Orientation, Scale, Opacity and Settings. Values save immediately for the displayed profile; Settings opens its Dock configuration. See [release notes and known shutdown limitation](docs/releases/0.5.0-alpha.3.md) and [validation](docs/validation-0.5.0-alpha.3.md).
 
 ![Native Dock grip context menu](docs/images/v0.5.0-alpha.3/dock-menu-dark.png)

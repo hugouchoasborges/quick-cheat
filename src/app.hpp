@@ -6,6 +6,7 @@
 namespace qc {
 constexpr wchar_t version[]=L"0.4.0-alpha.2";
 constexpr UINT ForegroundChanged=WM_APP+1, TrayMessage=WM_APP+2, ExecuteRow=WM_APP+3,BrowserChanged=WM_APP+4,BrowserDirty=WM_APP+5;
+constexpr int PopupContentTop=50,PopupTabsHeight=34,PopupFooterHeight=38;
 constexpr UINT CmdOpen=100,CmdManage=101,CmdData=102,CmdExit=103,CmdNew=104,CmdExecute=105,CmdShortcuts=106,CmdWorkflows=107,CmdManageWorkflows=108,CmdExpand=109,CmdPin=110,CmdPopupClose=111,CmdBack=112;
 struct Target { HWND window{}; DWORD process{}; std::wstring executable,name,website; };
 struct Editor;

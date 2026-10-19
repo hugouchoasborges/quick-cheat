@@ -48,5 +48,7 @@ Fourth Settings tab Dock keeps explicit Apply, ordered checkbox list, orientatio
 
 ## Dock refinements (0.4.0-alpha.2)
 
+0.5.0-alpha.4 candidate supersedes the tall centered library heading: one compact context/search/icon row, ellipsized full accessible context, no separate footer panel, muted count and inline Expand/Execute. Keep keyboard Esc and 30px native header icons; Settings keeps centered title/back navigation in a46px header. Shared content/tabs/footer metrics apply to shortcut details and workflow readers. This follows Hugo's request to make header/footer minimal or embedded.
+
 0.5.0-alpha.3 candidate: grip right-click opens a native context menu with checked Enable Dock, Orientation, Scale and Opacity submenus, separator and Settings last. Percentages include the saved value. Commit immediately to the displayed profile, preserve pending drafts, validate target identity after the menu loop and restore browser/app focus. Settings opens Dock for that profile. Native menu styling follows Windows.
 Browser heading puts hostname before executable, falling back to process only. Dock overflow uses Previous/Next pages without scrollbars; orientation, selected order and nonactivating mouse handling remain. Settings uses a behavior/appearance column and a wider ordered shortcut column, with native auto-checkboxes for enable/collapsed, selection count, clear Apply and pending-edit feedback. Preserve native accessibility and Space behavior while theming checkbox paint.

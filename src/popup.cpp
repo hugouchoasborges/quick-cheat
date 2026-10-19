@@ -64,25 +64,29 @@ void App::layoutPopup(){
  if(!popup)return;UINT dpi=GetDpiForWindow(popup);RECT r;GetClientRect(popup,&r);int width=MulDiv(r.right,96,dpi),height=MulDiv(r.bottom,96,dpi);
  if(!font||popupDpi!=dpi){HFONT next=makeFont(dpi,14,FW_SEMIBOLD),nextSmall=makeFont(dpi,12,FW_NORMAL),nextBold=makeFont(dpi,19,FW_NORMAL);
  for(HWND c=GetWindow(popup,GW_CHILD);c;c=GetWindow(c,GW_HWNDNEXT))SendMessageW(c,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);
- SendMessageW(search,WM_SETFONT,reinterpret_cast<WPARAM>(nextBold),TRUE);SendMessageW(heading,WM_SETFONT,reinterpret_cast<WPARAM>(nextBold),TRUE);SendMessageW(footer,WM_SETFONT,reinterpret_cast<WPARAM>(nextSmall),TRUE);
+ SendMessageW(search,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);SendMessageW(heading,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);SendMessageW(footer,WM_SETFONT,reinterpret_cast<WPARAM>(nextSmall),TRUE);
  if(font)DeleteObject(font);if(labelFont)DeleteObject(labelFont);if(bold)DeleteObject(bold);font=next;labelFont=nextSmall;bold=nextBold;popupDpi=dpi;}
- bounds(heading,148,14,width-296,32,dpi);bounds(search,46,62,width-62,30,dpi);
- bounds(GetDlgItem(popup,CmdManage),width-(popupPinned?140:96),12,36,36,dpi);bounds(GetDlgItem(popup,CmdBack),16,12,36,36,dpi);ShowWindow(GetDlgItem(popup,CmdBack),settingsVisible?SW_SHOWNA:SW_HIDE);
+ int contextWidth=std::clamp(width/5,112,180),iconsWidth=popupPinned?108:74;
+ LONG_PTR headingStyle=GetWindowLongPtrW(heading,GWL_STYLE),nextStyle=(headingStyle&~(SS_TYPEMASK|SS_ELLIPSISMASK))|(settingsVisible?SS_CENTER:SS_LEFT)|SS_ENDELLIPSIS;
+ if(headingStyle!=nextStyle)SetWindowLongPtrW(heading,GWL_STYLE,nextStyle);
+ if(settingsVisible)bounds(heading,60,8,width-120-iconsWidth,30,dpi);else bounds(heading,12,10,contextWidth,26,dpi);
+ bounds(search,contextWidth+44,10,width-contextWidth-44-iconsWidth-16,28,dpi);
+ bounds(GetDlgItem(popup,CmdManage),width-iconsWidth,8,30,30,dpi);bounds(GetDlgItem(popup,CmdBack),8,8,30,30,dpi);ShowWindow(GetDlgItem(popup,CmdBack),settingsVisible?SW_SHOWNA:SW_HIDE);
  SetPropW(GetDlgItem(popup,CmdManage),L"QcSelected",reinterpret_cast<HANDLE>(settingsVisible));
- bounds(GetDlgItem(popup,CmdPin),width-(popupPinned?96:52),12,36,36,dpi);bounds(GetDlgItem(popup,CmdPopupClose),width-52,12,36,36,dpi);ShowWindow(GetDlgItem(popup,CmdPopupClose),popupPinned?SW_SHOWNA:SW_HIDE);
+ bounds(GetDlgItem(popup,CmdPin),width-(popupPinned?74:40),8,30,30,dpi);bounds(GetDlgItem(popup,CmdPopupClose),width-40,8,30,30,dpi);ShowWindow(GetDlgItem(popup,CmdPopupClose),popupPinned?SW_SHOWNA:SW_HIDE);
  SetWindowTextW(GetDlgItem(popup,CmdPin),popupPinned?L"Unpin popup":L"Pin popup");SetPropW(GetDlgItem(popup,CmdPin),L"QcSelected",reinterpret_cast<HANDLE>(popupPinned));
- bounds(rows,8,118,width-16,height-186,dpi);bounds(empty,48,198,width-96,104,dpi);
- bounds(GetDlgItem(popup,CmdExit),16,height-44,46,30,dpi);bounds(footer,76,height-38,width-488,24,dpi);
- bounds(GetDlgItem(popup,CmdExpand),width-228,height-44,96,30,dpi);
- bounds(GetDlgItem(popup,CmdExecute),width-120,height-44,104,30,dpi);
+ bounds(rows,8,PopupContentTop,width-16,height-PopupContentTop-PopupFooterHeight,dpi);bounds(empty,36,94,width-72,104,dpi);
+ ShowWindow(GetDlgItem(popup,CmdExit),SW_HIDE);bounds(footer,12,height-28,width-208,20,dpi);
+ bounds(GetDlgItem(popup,CmdExpand),width-180,height-32,76,24,dpi);
+ bounds(GetDlgItem(popup,CmdExecute),width-96,height-32,88,24,dpi);
  layoutWorkflowPopup();
  layoutShortcutTiles();
  updateShortcutDetail();
  if(settingsVisible){
   for(HWND child=GetWindow(popup,GW_CHILD);child;child=GetWindow(child,GW_HWNDNEXT)){int id=GetDlgCtrlID(child);if(child!=heading&&id!=CmdManage&&id!=CmdBack&&id!=CmdPin&&id!=CmdPopupClose&&(!editor||child!=editor->window))ShowWindow(child,SW_HIDE);}
-  SetWindowTextW(heading,L"Settings");if(editor&&editor->window){bounds(editor->window,0,54,width,height-54,dpi);ShowWindow(editor->window,SW_SHOWNA);editor->layout();}
+  SetWindowTextW(heading,L"Settings");if(editor&&editor->window){bounds(editor->window,0,46,width,height-46,dpi);ShowWindow(editor->window,SW_SHOWNA);editor->layout();}
  }else{
-  ShowWindow(search,SW_SHOWNA);ShowWindow(heading,SW_SHOWNA);ShowWindow(footer,SW_SHOWNA);ShowWindow(GetDlgItem(popup,CmdExit),SW_SHOWNA);ShowWindow(GetDlgItem(popup,CmdExpand),SW_SHOWNA);
+  ShowWindow(search,SW_SHOWNA);ShowWindow(heading,SW_SHOWNA);ShowWindow(footer,SW_SHOWNA);ShowWindow(GetDlgItem(popup,CmdExpand),SW_SHOWNA);
  }
  if(dock)dock->refresh();InvalidateRect(popup,nullptr,TRUE);
 }
@@ -96,7 +100,7 @@ void App::refreshPopup(bool clearSearch){
  ShowWindow(rows,visibleRows.empty()?SW_HIDE:SW_SHOWNA);ShowWindow(empty,visibleRows.empty()?SW_SHOWNA:SW_HIDE);
  SetWindowTextW(empty,query.empty()?L"No shortcuts for this application yet.\n\nOpen Settings > Shortcuts to add your first one.":L"No matching shortcuts.\n\nTry another description, category or key combination.");
  if(!visibleRows.empty())moveShortcutSelection(1);EnableWindow(GetDlgItem(popup,CmdExecute),selectedShortcut()>=0);
- SendMessageW(rows,WM_SETREDRAW,TRUE,0);SetWindowTextW(footer,(std::to_wstring(visibleRows.size())+(visibleRows.size()==1?L" shortcut":L" shortcuts")+L"  ·  Quick Cheat").c_str());
+ SendMessageW(rows,WM_SETREDRAW,TRUE,0);SetWindowTextW(footer,(std::to_wstring(visibleRows.size())+(visibleRows.size()==1?L" shortcut":L" shortcuts")).c_str());
  refreshWorkflowPopup();updatingPopup=false;layoutPopup();
 }
 LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
@@ -112,8 +116,8 @@ LRESULT CALLBACK App::popupProc(HWND h,UINT msg,WPARAM w,LPARAM l){
  case WM_SIZING:app->popupSizing=true;break;
  case WM_EXITSIZEMOVE:if(app->popupSizing){app->rememberPopupSize();app->popupSizing=false;}return 0;
  case WM_ERASEBKGND:{RECT r;GetClientRect(h,&r);FillRect(reinterpret_cast<HDC>(w),&r,app->theme.background);return 1;}
- case WM_PAINT:{PAINTSTRUCT ps;auto dc=BeginPaint(h,&ps);RECT r;GetClientRect(h,&r);FillRect(dc,&r,app->theme.background);UINT dpi=GetDpiForWindow(h);auto px=[&](int n){return MulDiv(n,dpi,96);};HPEN line=CreatePen(PS_SOLID,1,app->theme.colors.border);auto old=SelectObject(dc,line);MoveToEx(dc,0,px(110),nullptr);LineTo(dc,r.right,px(110));MoveToEx(dc,0,r.bottom-px(58),nullptr);LineTo(dc,r.right,r.bottom-px(58));
- HPEN icon=CreatePen(PS_SOLID,1,app->theme.colors.muted);SelectObject(dc,icon);HBRUSH oldBrush=static_cast<HBRUSH>(SelectObject(dc,GetStockObject(NULL_BRUSH)));Ellipse(dc,px(23),px(68),px(35),px(80));MoveToEx(dc,px(33),px(78),nullptr);LineTo(dc,px(40),px(85));SelectObject(dc,oldBrush);SelectObject(dc,old);DeleteObject(icon);DeleteObject(line);EndPaint(h,&ps);return 0;}
+ case WM_PAINT:{PAINTSTRUCT ps;auto dc=BeginPaint(h,&ps);RECT r;GetClientRect(h,&r);FillRect(dc,&r,app->theme.background);UINT dpi=GetDpiForWindow(h);auto px=[&](int n){return MulDiv(n,dpi,96);};
+ if(!app->settingsVisible){int x=std::clamp(MulDiv(r.right,96,dpi)/5,112,180)+22;HPEN icon=CreatePen(PS_SOLID,1,app->theme.colors.muted);auto old=SelectObject(dc,icon);auto oldBrush=SelectObject(dc,GetStockObject(NULL_BRUSH));Ellipse(dc,px(x),px(18),px(x+10),px(28));MoveToEx(dc,px(x+8),px(26),nullptr);LineTo(dc,px(x+14),px(32));SelectObject(dc,oldBrush);SelectObject(dc,old);DeleteObject(icon);}EndPaint(h,&ps);return 0;}
  case WM_SIZE:app->layoutPopup();return 0;
  case WM_DPICHANGED:{auto* r=reinterpret_cast<RECT*>(l);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);app->layoutPopup();return 0;}
  case WM_DRAWITEM:app->theme.drawControl(reinterpret_cast<DRAWITEMSTRUCT*>(l));return TRUE;

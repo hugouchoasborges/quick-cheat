@@ -30,10 +30,10 @@ void App::layoutWorkflowPopup(){
  if(workflowsVisible&&!workflowDetail){workflowDetail=createMarkdownView(popup,Detail);if(workflowDetail){SendMessageW(workflowDetail,WM_SETFONT,reinterpret_cast<WPARAM>(font),TRUE);SetWindowSubclass(workflowDetail,treeProc,1,reinterpret_cast<DWORD_PTR>(this));}}
  UINT dpi=GetDpiForWindow(popup);RECT r;GetClientRect(popup,&r);int width=MulDiv(r.right,96,dpi),height=MulDiv(r.bottom,96,dpi);
  ShowWindow(GetDlgItem(popup,CmdShortcuts),hasFlows?SW_SHOWNA:SW_HIDE);ShowWindow(GetDlgItem(popup,CmdWorkflows),hasFlows?SW_SHOWNA:SW_HIDE);
- bounds(GetDlgItem(popup,CmdShortcuts),16,116,112,28,dpi);bounds(GetDlgItem(popup,CmdWorkflows),136,116,112,28,dpi);
- bounds(rows,8,hasFlows?152:118,width-16,height-(hasFlows?220:186),dpi);
- int contentHeight=(std::max)(height-224,120);if(width>=960){int treeWidth=(width-48)*42/100;bounds(workflowTree,16,152,treeWidth,contentHeight,dpi);bounds(workflowDetail,32+treeWidth,152,width-48-treeWidth,contentHeight,dpi);}
- else{int treeHeight=contentHeight*55/100;bounds(workflowTree,16,152,width-32,treeHeight,dpi);bounds(workflowDetail,16,164+treeHeight,width-32,contentHeight-treeHeight-12,dpi);}
+ bounds(GetDlgItem(popup,CmdShortcuts),12,PopupContentTop,104,26,dpi);bounds(GetDlgItem(popup,CmdWorkflows),124,PopupContentTop,104,26,dpi);
+ int top=PopupContentTop+(hasFlows?PopupTabsHeight:0);bounds(rows,8,top,width-16,height-top-PopupFooterHeight,dpi);
+ int contentTop=PopupContentTop+PopupTabsHeight,contentHeight=(std::max)(height-contentTop-PopupFooterHeight-6,120);if(width>=960){int treeWidth=(width-48)*42/100;bounds(workflowTree,16,contentTop,treeWidth,contentHeight,dpi);bounds(workflowDetail,32+treeWidth,contentTop,width-48-treeWidth,contentHeight,dpi);}
+ else{int treeHeight=contentHeight*55/100;bounds(workflowTree,16,contentTop,width-32,treeHeight,dpi);bounds(workflowDetail,16,contentTop+12+treeHeight,width-32,contentHeight-treeHeight-12,dpi);}
  TreeView_SetItemHeight(workflowTree,MulDiv(30,dpi,96));TreeView_SetIndent(workflowTree,MulDiv(20,dpi,96));
  ShowWindow(workflowTree,workflowsVisible?SW_SHOWNA:SW_HIDE);ShowWindow(workflowDetail,workflowsVisible?SW_SHOWNA:SW_HIDE);
  if(!workflowsVisible&&workflowDetail)clearMarkdown(workflowDetail);

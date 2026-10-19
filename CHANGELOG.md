@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0-alpha.4 — 2026-10-19
+
+Local candidate: compact popup header combines context, search and icons in one row. Remove full-width header/footer dividers and redundant Escape button; retain keyboard Esc, count and inline Expand/Execute. Content starts 68 logical pixels earlier; reserve 30 fewer pixels at the bottom. Shared layout metrics cover shortcut details, workflows and Settings. Release SkipTests and isolated DEMO visual review completed; no automated tests added/run. Public release remains alpha.3; manual acceptance pending.
+
 ## 0.5.0-alpha.3 — 2026-10-19
 
 Prerelease delivery authorized by Hugo on 2026-10-19. Right-click the Dock grip for native Enable Dock, Orientation, Scale and Opacity menus, with checked current values and Settings last. Changes persist to the displayed application/site profile, preserving shortcut order; Settings opens the Dock tab for that profile. Quick edits refuse to overwrite pending Settings drafts. Existing arbitrary percentages remain selectable. No schema change or automated tests added/run. Known issue: normal exit can leave a residual process blocking executable replacement; shutdown cleanup is not fixed in this release. Broad menu/compatibility validation remains explicit in the checklist.
