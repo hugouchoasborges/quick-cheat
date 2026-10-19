@@ -1,6 +1,7 @@
 # 0.5.0-alpha.3 — Dock grip context menu
 
-Local candidate, not published/accepted. Public version remains alpha.2.
+Hugo authorized delivery of this version on 2026-10-19 and starting the 0.6–0.9
+roadmap. This is authorization to release, not additional test evidence.
 Right-click the grip/background strip (not shortcut buttons): Enable Dock,
 Orientation (Horizontal/Vertical), Scale (50–200%), Opacity (20–100%),
 separator and Settings last. Presets include any current non-preset value.

@@ -2,7 +2,7 @@
 
 ## 0.5.0-alpha.3 — 2026-10-19
 
-Local candidate: right-click the Dock grip for native Enable Dock, Orientation, Scale and Opacity menus, with checked current values and Settings last. Changes persist to the displayed application/site profile, preserving shortcut order; Settings opens the Dock tab for that profile. Quick edits refuse to overwrite pending Settings drafts. Existing arbitrary percentages remain selectable. No schema change or automated tests added/run. Manual acceptance pending; public release remains alpha.2.
+Prerelease delivery authorized by Hugo on 2026-10-19. Right-click the Dock grip for native Enable Dock, Orientation, Scale and Opacity menus, with checked current values and Settings last. Changes persist to the displayed application/site profile, preserving shortcut order; Settings opens the Dock tab for that profile. Quick edits refuse to overwrite pending Settings drafts. Existing arbitrary percentages remain selectable. No schema change or automated tests added/run. Known issue: normal exit can leave a residual process blocking executable replacement; shutdown cleanup is not fixed in this release. Broad menu/compatibility validation remains explicit in the checklist.
 
 ## 0.5.0-alpha.2 — 2026-10-19
 
