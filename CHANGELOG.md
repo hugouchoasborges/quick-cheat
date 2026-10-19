@@ -2,7 +2,7 @@
 
 ## 0.5.0-alpha.2 — 2026-10-19
 
-Local candidate: increase the bounded native browser-chrome traversal from 128 to 512 elements. Observed Edge 155 exposes the address field but exceeds the previous completion budget, causing browser-only fallback. The 400 ms deadline, focused/ambiguous field rejection, renderer exclusion and execution confirmation remain. Live popup acceptance is pending; no automated tests added or run.
+Prerelease authorized by Hugo on 2026-10-19 after confirming website recognition in Edge and the contextual Dock. Includes the earlier 0.4 Dock/website work, now delivered after public 0.3.0-alpha.2. Increases bounded native browser-chrome traversal from 128 to 512 elements: observed Edge 155 exceeds the previous completion budget. The 400 ms deadline, focused/ambiguous field rejection, renderer exclusion and execution confirmation remain. New versioned DEMO screenshots include Dock, settings and overflow pagination. Packages use build/Release, include release notes/screenshots/licenses, source metadata and SHA-256. Broader support/performance validation remains open; no automated tests added or run.
 
 ## 0.5.0-alpha.1 — 2026-10-19
 

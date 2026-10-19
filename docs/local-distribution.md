@@ -5,14 +5,14 @@ with C++, Windows SDK and CMake 3.24+. Only x64 Release is packaged; MSVC runtim
 is statically linked. Exact minimum Windows/browser versions remain unconfirmed.
 
 From a clean, committed checkout, run `./scripts/package.ps1` in PowerShell.
-It builds with SkipTests in `build/local-distribution`, leaving the development
-executable and any running instance intact. Output: `build/packages/`, named
+It builds with SkipTests in `build/Release`, the usual user-facing path. Exit the
+application normally before building. Output: `build/packages/`, named
 with the executable version and source commit. Existing packages are refused.
 Failed staging directories are retained; inspect them before removing manually.
-No app is launched, stopped, installed, signed, uploaded or published.
+The script does not launch, stop, install, sign, upload or publish the app.
 
 The ZIP contains only the executable, explicit documentation/license allowlist,
-build metadata and SHA256SUMS.txt. No user data, drafts, attachments, preview
+versioned DEMO screenshots, release notes, build metadata and SHA256SUMS.txt. No user data, drafts, attachments, preview
 helper or tests are packaged. The external `.zip.sha256` hashes the ZIP itself;
 `Get-FileHash -Algorithm SHA256 <zip>` must agree before extracting.
 The internal manifest hashes every payload file except the manifest itself.
@@ -37,7 +37,8 @@ For rollback to pre-v4, restore shortcuts.qc.pre-v4.bak as shortcuts.qc along
 with matching attachments. Later v4 changes are absent from that backup.
 A restoration UI, automatic updates, signing and installer remain undecided.
 
-Before any release: complete cumulative 0.4 and current candidate acceptance,
+Before any release: review cumulative 0.4 and current candidate acceptance,
 confirm metadata/hashes/licenses, try extraction on a second x64 Windows machine,
 and obtain explicit acceptance and publication request. A successful build is
-not runtime compatibility evidence. Main and public 0.3 remain unchanged.
+not runtime compatibility evidence. See each version's release notes for the
+actual acceptance scope; pending support-matrix items remain explicit.

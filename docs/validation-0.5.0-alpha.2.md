@@ -1,6 +1,8 @@
 # 0.5.0-alpha.2 — Edge native address traversal
 
-Local candidate, not accepted/published. User reports msedge.exe without website.
+Hugo confirmed Edge website recognition and Dock functioning on 2026-10-19,
+then explicitly requested GitHub publication and refreshed documentation photos.
+Original report: msedge.exe without website.
 Running development executable confirmed 0.4.0-alpha.2; Edge 155.0.4283.62.
 
 Read-only UIA inspection of the live Edge window found an unfocused Edit
@@ -29,6 +31,11 @@ Manual validation after normal exit of the previous instance:
 
 The initial isolated build preserved the old running executable. Hugo subsequently
 requested the usual build/Release path for compilation and launch; this is now the
-user-facing build convention. Native end-to-end acceptance remains pending.
+user-facing build convention. Hugo subsequently confirmed recognition in the live
+corrected build and the Dock. Other matrix items are not implied by that confirmation.
+
+Fresh isolated DEMO captures: build/release-0.5.2-preview.log and
+build/release-0.5.2-overflow.log. Versioned PNGs: docs/images/v0.5.0-alpha.2/.
+No automated tests added/run. See releases/0.5.0-alpha.2.md for release scope.
 
 Library: [0.5.0-alpha.2 evidence](tgslib://7e06deadd974f132).
