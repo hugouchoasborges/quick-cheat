@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(QuickCheat VERSION 0.4.0 LANGUAGES C CXX RC)
+project(QuickCheat VERSION 0.5.0 LANGUAGES C CXX RC)
 if(NOT WIN32)
   message(FATAL_ERROR "Quick Cheat requires Windows")
 endif()
