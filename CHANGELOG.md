@@ -2,6 +2,8 @@
 
 ## 0.6.0-alpha.1 — local candidate, 2026-10-19
 
+Hugo reported the local manual checklist working on 2026-10-19: compact popup, existing content/actions, Settings/Dock, drafts and catalog interface/navigation. This accepts the tested local scope; it excludes the undeployed service and unfinished roadmap stages. No publication requested; no independently verified shutdown fix.
+
 Adds Community collections to the tray menu: native search, current-application filter, paged list, author/license/content details, on-demand download and the existing Add/Replace import preview. Requests run on a cancellable worker; canceled generations cannot install. Successful imports record their source and original version. No requests on opening the window, foreground polling or automatic uploads. Public catalog and any-Google publishing/voting policy confirmed; first localization languages are English and Português (Brasil).
 
 Release SkipTests succeeded after Hugo manually ended the residual alpha.4 process that had blocked linking. The runnable executable is 0.6.0-alpha.1 at the existing build/Release path. Fresh versioned DEMO captures cover the compact popup, settings, Dock and idle catalog; native dark-theme backgrounds and checkbox painting follow existing controls. The capture helper explicitly restores its controlled target before showing the Dock. The Portal module is not deployed, and real search/import behavior, accounts/publishing/votes/updates/localization remain unfinished. No automated tests added/run; no release published. See [evidence](docs/validation-0.6.0-alpha.1.md).

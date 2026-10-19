@@ -39,6 +39,15 @@ Real-data launch used the usual Release path (PID 20752). Hugo confirmed that it
 opened and he closed it himself. The later absence of host/windows is not evidence
 of startup failure. This confirms opening, not full catalog/install acceptance.
 
+On 2026-10-19 Hugo reported "Está tudo funcionando" in response to the manual
+checklist: compact popup, shortcuts/workflows, Settings/Dock, drafts, native catalog
+layout/navigation and normal exit. Record this as user-reported acceptance of that
+local scope. Process disappearance was not independently measured and no shutdown
+fix was implemented; the earlier residual-process issue is not proven resolved.
+Real catalog service/search/install, Google accounts, publishing/votes, updates
+and localization were explicitly excluded from that checklist and remain pending.
+This feedback does not request publication or main promotion.
+
 ## Manual checks after building and deploying the service
 
 - Open Community collections from the tray; opening alone should not fetch.
