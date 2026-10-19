@@ -14,7 +14,7 @@ constexpr NamedKey names[] = {{L"Space",VK_SPACE},{L"Enter",VK_RETURN},{L"Tab",V
  {L"Plus",VK_OEM_PLUS},{L"Minus",VK_OEM_MINUS},{L"Comma",VK_OEM_COMMA},
  {L"Period",VK_OEM_PERIOD},{L"Slash",VK_OEM_2},{L"Backslash",VK_OEM_5},
  {L"Semicolon",VK_OEM_1},{L"Quote",VK_OEM_7},{L"BracketLeft",VK_OEM_4},
- {L"BracketRight",VK_OEM_6},{L"Backtick",VK_OEM_3}};
+ {L"BracketRight",VK_OEM_6},{L"Backtick",VK_OEM_3},{L"IntlBackslash",VK_OEM_102}};
 std::wstring trim(std::wstring s) {
  const auto first=s.find_first_not_of(L" \r\n\t");
  return first==s.npos ? L"" : s.substr(first,s.find_last_not_of(L" \r\n\t")-first+1);
@@ -45,7 +45,13 @@ std::optional<Chord> parseChord(const std::wstring& text) {
  else if(same(token,L"Shift"))modifier=MOD_SHIFT;else if(same(token,L"Win"))modifier=MOD_WIN;
  if(modifier) { if(hasKey||(chord.modifiers&modifier))return {};chord.modifiers|=modifier;continue; }
  if(hasKey)return {};hasKey=true;
- if(token.size()==1&&iswalnum(token[0])&&token[0]<128)chord.key=static_cast<WORD>(towupper(token[0]));
+ if(token==L"\\"){
+  SHORT mapped=VkKeyScanExW(L'\\',GetKeyboardLayout(0));if(mapped==-1)return {};
+  UINT modifiers=static_cast<unsigned short>(mapped)>>8;if(modifiers&~7u)return {};
+  chord.key=static_cast<WORD>(mapped&255);if(modifiers&1)chord.modifiers|=MOD_SHIFT;if(modifiers&2)chord.modifiers|=MOD_CONTROL;if(modifiers&4)chord.modifiers|=MOD_ALT;
+  if(formatChord(chord).empty())return {};
+ }
+ else if(token.size()==1&&iswalnum(token[0])&&token[0]<128)chord.key=static_cast<WORD>(towupper(token[0]));
  else if((token[0]==L'F'||token[0]==L'f')&&token.size()<=3) { UINT n=0;if(!number(token.substr(1),n)||n<1||n>24)return {};chord.key=static_cast<WORD>(VK_F1+n-1); }
  else { for(const auto& entry:names)if(same(token,entry.name))chord.key=entry.key;if(!chord.key)return {}; }
  }

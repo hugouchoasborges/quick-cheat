@@ -68,7 +68,9 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
-The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.1 candidate** retains it; the public download remains alpha.3.
+The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.2 candidate** retains it; the public download remains alpha.3.
+
+Local alpha.2 fixes **Ctrl + backslash** on ABNT2. Type `Ctrl+\` or use **Record**; the ABNT2 key appears as `Ctrl+IntlBackslash`. Existing `Backslash` shortcuts keep their original key. See [validation](docs/validation-0.6.0-alpha.2.md); screenshots below show the unchanged alpha.1 layout.
 
 ![Compact native popup — local 0.6 candidate, DEMO data](docs/images/v0.6.0-alpha.1/popup-dark.png)
 

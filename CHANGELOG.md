@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0-alpha.2 — local candidate, 2026-10-19
+
+Fix registering Ctrl+backslash on ABNT2: recognize VK_OEM_102 as IntlBackslash during recording, validation and formatting; accept a typed backslash using the current keyboard layout and its required modifiers. Existing Backslash (VK_OEM_5) and stored virtual-key values retain their meaning. No schema change. Release SkipTests succeeded; manual capture/save/reopen/execution verification is pending. No automated tests added/run, no publication or main promotion. See [evidence](docs/validation-0.6.0-alpha.2.md).
+
 ## 0.6.0-alpha.1 — local candidate, 2026-10-19
 
 Hugo reported the local manual checklist working on 2026-10-19: compact popup, existing content/actions, Settings/Dock, drafts and catalog interface/navigation. This accepts the tested local scope; it excludes the undeployed service and unfinished roadmap stages. No publication requested; no independently verified shutdown fix.
