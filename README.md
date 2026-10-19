@@ -68,6 +68,10 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
+Local **0.5.0-alpha.3 candidate** adds a right-click menu on the Dock grip: Enable Dock, Orientation, Scale, Opacity and Settings. Values save immediately for the displayed profile; Settings opens its Dock configuration. See [candidate validation](docs/validation-0.5.0-alpha.3.md). The public download remains alpha.2 until separate acceptance/publication.
+
+![Native Dock grip context menu — local alpha.3 candidate](docs/images/v0.5.0-alpha.3/dock-menu-dark.png)
+
 The native **Dock** works per application: check shortcuts, arrange their order, choose horizontal/vertical layout, scale and opacity, then Apply. Dock settings separates behavior and appearance from the ordered shortcut list, with checkboxes for activation and collapsed state plus a selected count. The dock appears only over its foreground application, supports grip dragging, collapse/expand and Previous/Next pages instead of scrollbars for oversized selections, and sends a shortcut without taking keyboard focus.
 
 ![Contextual dock in dark mode](docs/images/v0.5.0-alpha.2/dock-dark.png)

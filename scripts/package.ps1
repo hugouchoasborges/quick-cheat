@@ -19,6 +19,7 @@ New-Item -ItemType Directory -Path $stage | Out-Null
 $files=@('LICENSE','THIRD_PARTY_NOTICES.md','README.md','CHANGELOG.md','docs/local-distribution.md','docs/support-matrix.md','docs/validation-0.5.0-alpha.1.md','docs/validation-0.5.0-alpha.2.md','docs/browser-integration.md','docs/collection-format.md','docs/validation-0.4.0-alpha.1.md','docs/validation-0.4.0-alpha.2.md')
 Copy-Item -LiteralPath $exe -Destination (Join-Path $stage 'QuickCheat.exe')
 $files+="docs/releases/$version.md"
+if($files -notcontains "docs/validation-$version.md"){$files+="docs/validation-$version.md"}
 $files+=@(Get-ChildItem -LiteralPath (Join-Path $repoRoot "docs/images/v$version") -Filter '*.png' -File | ForEach-Object {"docs/images/v$version/$($_.Name)"})
 foreach($file in $files){
  $target=Join-Path $stage $file
