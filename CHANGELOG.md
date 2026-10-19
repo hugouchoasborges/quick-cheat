@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0-alpha.3 — 2026-10-19
+
+Prerelease delivery authorized by Hugo on 2026-10-19. Right-click the Dock grip for native Enable Dock, Orientation, Scale and Opacity menus, with checked current values and Settings last. Changes persist to the displayed application/site profile, preserving shortcut order; Settings opens the Dock tab for that profile. Quick edits refuse to overwrite pending Settings drafts. Existing arbitrary percentages remain selectable. No schema change or automated tests added/run. Known issue: normal exit can leave a residual process blocking executable replacement; shutdown cleanup is not fixed in this release. Broad menu/compatibility validation remains explicit in the checklist.
+
 ## 0.5.0-alpha.2 — 2026-10-19
 
 Prerelease authorized by Hugo on 2026-10-19 after confirming website recognition in Edge and the contextual Dock. Includes the earlier 0.4 Dock/website work, now delivered after public 0.3.0-alpha.2. Increases bounded native browser-chrome traversal from 128 to 512 elements: observed Edge 155 exceeds the previous completion budget. The 400 ms deadline, focused/ambiguous field rejection, renderer exclusion and execution confirmation remain. New versioned DEMO screenshots include Dock, settings and overflow pagination. Packages use build/Release, include release notes/screenshots/licenses, source metadata and SHA-256. Broader support/performance validation remains open; no automated tests added or run.

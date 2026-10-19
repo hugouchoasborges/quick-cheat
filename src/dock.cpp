@@ -11,6 +11,7 @@ Dock::~Dock(){if(window)DestroyWindow(window);if(font)DeleteObject(font);}
 void Dock::themeChanged(){renderKey.clear();if(window)app.theme.style(window);refresh();}
 void Dock::refresh(){
  if(saving)return;
+ if(menuOpen){if(app.target.window!=targetWindow||app.target.process!=targetProcess||!IsWindow(targetWindow))EndMenu();return;}
  auto hide=[&]{dragging=false;HWND captured=GetCapture();if(captured&&(captured==window||(window&&IsChild(window,captured))))ReleaseCapture();if(window)ShowWindow(window,SW_HIDE);};
  if(!targetAlive(app.target)||GetForegroundWindow()!=app.target.window||IsIconic(app.target.window)||(app.popup&&IsWindowVisible(app.popup))){hide();return;}
  if(dragging)return;Profile* profile=nullptr;
@@ -87,6 +88,8 @@ LRESULT CALLBACK Dock::buttonProc(HWND h,UINT m,WPARAM w,LPARAM l,UINT_PTR,DWORD
 LRESULT CALLBACK Dock::proc(HWND h,UINT m,WPARAM w,LPARAM l){
  auto* dock=reinterpret_cast<Dock*>(GetWindowLongPtrW(h,GWLP_USERDATA));if(m==WM_NCCREATE){dock=static_cast<Dock*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(dock));}if(!dock)return DefWindowProcW(h,m,w,l);
  switch(m){case WM_MOUSEACTIVATE:return MA_NOACTIVATE;
+ case WM_CONTEXTMENU:if(reinterpret_cast<HWND>(w)==h){POINT point{static_cast<short>(LOWORD(l)),static_cast<short>(HIWORD(l))};dock->contextMenu(point);}return 0;
+ case WM_CANCELMODE:if(dock->menuOpen)EndMenu();dock->dragging=false;if(GetCapture()==h)ReleaseCapture();return 0;
  case WM_COMMAND:if(HIWORD(w)==BN_CLICKED){if(LOWORD(w)==Collapse)dock->toggleCollapsed();else if(LOWORD(w)==Previous||LOWORD(w)==Next){if(LOWORD(w)==Previous&&dock->page>0)--dock->page;else if(LOWORD(w)==Next&&dock->page+1<dock->pageCount)++dock->page;dock->renderKey.clear();dock->refresh();}else if(LOWORD(w)>=FirstShortcut)dock->execute(LOWORD(w)-FirstShortcut);}return 0;
  case WM_LBUTTONDOWN:if(GetForegroundWindow()!=dock->targetWindow)return 0;dock->dragging=true;GetCursorPos(&dock->dragStart);GetWindowRect(h,&dock->dragRect);SetCapture(h);return 0;
  case WM_MOUSEMOVE:if(dock->dragging){POINT cursor;GetCursorPos(&cursor);SetWindowPos(h,nullptr,dock->dragRect.left+cursor.x-dock->dragStart.x,dock->dragRect.top+cursor.y-dock->dragStart.y,0,0,SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);}return 0;
