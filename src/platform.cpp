@@ -20,6 +20,20 @@ bool targetAlive(const Target& target) {
  if(!target.window||!IsWindow(target.window))return false;
  auto now=identify(target.window);return now.process==target.process&&now.executable==target.executable;
 }
+bool sendWebsiteUrl(const Target& target,const std::wstring& url,std::wstring& error){
+ if(!targetAlive(target)||!isBrowserExecutable(target.executable)||!validWebUrl(url)){error=L"The browser or URL is no longer valid.";return false;}
+ const WORD held[]={VK_CONTROL,VK_MENU,VK_SHIFT,VK_LWIN,VK_RWIN,'L',VK_RETURN};for(WORD key:held)if(GetAsyncKeyState(key)&0x8000){error=L"Release keyboard keys before opening a URL.";return false;}
+ if(GetForegroundWindow()!=target.window)SetForegroundWindow(target.window);if(GetForegroundWindow()!=target.window){error=L"Activate the browser before opening this URL.";return false;}
+ std::vector<INPUT> input;input.reserve(url.size()*2+6);auto key=[&](WORD value,DWORD flags){INPUT item{};item.type=INPUT_KEYBOARD;item.ki.wVk=value;item.ki.dwFlags=flags;input.push_back(item);};
+ key(VK_CONTROL,0);key('L',0);key('L',KEYEVENTF_KEYUP);key(VK_CONTROL,KEYEVENTF_KEYUP);
+ for(wchar_t value:url){INPUT item{};item.type=INPUT_KEYBOARD;item.ki.wScan=value;item.ki.dwFlags=KEYEVENTF_UNICODE;input.push_back(item);item.ki.dwFlags|=KEYEVENTF_KEYUP;input.push_back(item);}
+ key(VK_RETURN,0);key(VK_RETURN,KEYEVENTF_KEYUP);
+ if(!targetAlive(target)||GetForegroundWindow()!=target.window){error=L"The browser changed before navigation.";return false;}
+ if(SendInput(static_cast<UINT>(input.size()),input.data(),sizeof(INPUT))!=input.size()){
+  INPUT release[3]{};WORD keys[]={VK_CONTROL,'L',VK_RETURN};for(int i=0;i<3;++i){release[i].type=INPUT_KEYBOARD;release[i].ki.wVk=keys[i];release[i].ki.dwFlags=KEYEVENTF_KEYUP;}SendInput(3,release,sizeof(INPUT));
+  error=L"Navigation input was interrupted. Review the address bar before retrying.";return false;
+ }return true;
+}
 bool sendChord(const Target& target,Chord chord,std::wstring& error) {
  if(!targetAlive(target)){error=L"The application window is no longer available. Activate it and try again.";return false;}
  constexpr WORD physical[]={VK_CONTROL,VK_MENU,VK_SHIFT,VK_LWIN,VK_RWIN};

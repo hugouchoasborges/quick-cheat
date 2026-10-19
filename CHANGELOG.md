@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0-alpha.3 — local candidate, 2026-10-19
+
+Add Open URL actions to website shortcuts, opening the current browser tab after the existing fresh hostname/window/process confirmation. Only HTTP(S) URLs; native Unicode input without changing the clipboard. Add optional Dock label to all shortcuts: it replaces only the Dock button text. Preserve full titles in the popup and settings. Native action/value/label fields include draft protection. Store v5 reads v1–v4 and preserves a pre-v5 backup on first save; collection v3 reads v1/v2 and includes URL/label in deduplication. Manual navigation/migration/import acceptance remains pending. No automated tests added/run, publication or main promotion. See [validation](docs/validation-0.6.0-alpha.3.md).
+
 ## 0.6.0-alpha.2 — local candidate, 2026-10-19
 
 Fix registering Ctrl+backslash on ABNT2: recognize VK_OEM_102 as IntlBackslash during recording, validation and formatting; accept a typed backslash using the current keyboard layout and its required modifiers. Existing Backslash (VK_OEM_5) and stored virtual-key values retain their meaning. No schema change. Release SkipTests succeeded; manual capture/save/reopen/execution verification is pending. No automated tests added/run, no publication or main promotion. See [evidence](docs/validation-0.6.0-alpha.2.md).

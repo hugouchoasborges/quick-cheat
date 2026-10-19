@@ -24,24 +24,25 @@ void App::requestWebsite(){
 void App::receiveWebsite(){
  if(!browser)return;auto result=browser->take();if(!result)return;
  bool open=pendingPopupOpen&&result->generation==openingGeneration;if(open)pendingPopupOpen=false;
- bool complete=pendingExecution&&result->generation==pendingGeneration;auto expected=pendingTarget;auto chord=pendingChord;if(complete)pendingExecution=false;
+ bool complete=pendingExecution&&result->generation==pendingGeneration;auto expected=pendingTarget;auto shortcut=pendingShortcut;if(complete)pendingExecution=false;
  if(result->window!=target.window||result->process!=target.process||!targetAlive(target))return;
  if(target.website!=result->website){syncCategoryStates();target.website=result->website;contextDirty=true;if(popup&&IsWindowVisible(popup))refreshPopup();if(dock)dock->refresh();}
  if(open&&GetForegroundWindow()==target.window)showPopupNow();
  if(complete){HWND foreground=GetForegroundWindow();DWORD process{};GetWindowThreadProcessId(foreground,&process);
   if(expected.window!=target.window||expected.process!=target.process||expected.website!=result->website||(foreground!=target.window&&process!=GetCurrentProcessId())){error(L"The active website changed or could not be confirmed. Open the shortcut list again before executing this website shortcut.");return;}
-  std::wstring message;if(!sendChord(target,chord,message))error(message);else if(!popupPinned)hidePopup(false);
+  std::wstring message;bool sent=shortcut.url.empty()?sendChord(target,shortcut.chord,message):sendWebsiteUrl(target,shortcut.url,message);if(!sent)error(message);else if(!popupPinned)hidePopup(false);
  }
 }
-void App::runShortcut(Chord chord,const std::wstring& expectedWebsite){
+void App::runShortcut(const Shortcut& shortcut,const std::wstring& expectedWebsite){
  if(pendingExecution)return;
- if(chord.key==store.trigger.key&&chord.modifiers==store.trigger.modifiers){error(L"This shortcut is reserved for Quick Cheat activation.");return;}
+ auto chord=shortcut.chord;if(shortcut.url.empty()&&chord.key==store.trigger.key&&chord.modifiers==store.trigger.modifiers){error(L"This shortcut is reserved for Quick Cheat activation.");return;}
+ if(!shortcut.url.empty()&&(expectedWebsite.empty()||!validWebUrl(shortcut.url))){error(L"URL actions require a website profile and a valid HTTP or HTTPS URL.");return;}
  HWND foreground=GetForegroundWindow();DWORD process{};GetWindowThreadProcessId(foreground,&process);if(!targetAlive(target)||(foreground!=target.window&&process!=GetCurrentProcessId()))return;
  if(!expectedWebsite.empty()){
   if(pendingExecution||!browser||!NativeBrowserContext::supported(target.executable))return;
   if(!popupPinned)hidePopup(false);
   if(GetForegroundWindow()!=target.window){SetForegroundWindow(target.window);if(GetForegroundWindow()!=target.window){error(L"Activate the browser window before executing this website shortcut.");return;}}
-  pendingTarget=target;pendingTarget.website=expectedWebsite;pendingChord=chord;pendingExecution=true;pendingGeneration=browser->request(target.window,target.process,target.executable);return;
+  pendingTarget=target;pendingTarget.website=expectedWebsite;pendingShortcut=shortcut;pendingExecution=true;pendingGeneration=browser->request(target.window,target.process,target.executable);return;
  }
  std::wstring message;if(!sendChord(target,chord,message))error(message);else if(!popupPinned)hidePopup(false);
 }

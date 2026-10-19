@@ -6,7 +6,7 @@
 namespace qc {
 inline constexpr size_t maxStoreBytes=8*1024*1024;
 struct Chord { UINT modifiers{}; WORD key{}; };
-struct Shortcut { std::wstring title, category; Chord chord; };
+struct Shortcut { std::wstring title, category; Chord chord; std::wstring url,dockLabel; };
 struct Workflow { std::wstring title; std::vector<std::wstring> steps; };
 struct DockConfig { bool enabled{},vertical{},collapsed{}; UINT scale{100},opacity{100}; int x{-1},y{-1}; std::vector<size_t> shortcuts; };
 struct Profile { std::wstring executable, name; std::vector<Shortcut> shortcuts; std::vector<Workflow> workflows; std::wstring website; DockConfig dock; };
@@ -20,6 +20,8 @@ Profile* findProfile(Store& store,const std::wstring& key);
 const Profile* findProfile(const Store& store,const std::wstring& key);
 void removeDockShortcut(Profile& profile,size_t erasedIndex);
 bool matchesShortcut(const Shortcut& shortcut,const std::wstring& query);
+bool validWebUrl(const std::wstring& url);
+std::wstring shortcutActionText(const Shortcut& shortcut);
 std::optional<Chord> parseChord(const std::wstring& text);
 std::wstring formatChord(Chord chord);
 std::wstring appKey(const std::wstring& path);

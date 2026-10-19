@@ -28,13 +28,13 @@ void DockSettings::populate(){
  loading=true;order.clear();auto* profile=findProfile(app.store,key);EnableWindow(window,profile!=nullptr);ListView_DeleteAllItems(list);
  if(profile){auto& dock=profile->dock;SendMessageW(enabled,BM_SETCHECK,dock.enabled?BST_CHECKED:BST_UNCHECKED,0);SendMessageW(collapsed,BM_SETCHECK,dock.collapsed?BST_CHECKED:BST_UNCHECKED,0);SendMessageW(orientation,CB_SETCURSEL,dock.vertical?1:0,0);SetWindowTextW(scale,std::to_wstring(dock.scale).c_str());SetWindowTextW(opacity,std::to_wstring(dock.opacity).c_str());
  order=dock.shortcuts;for(size_t i=0;i<profile->shortcuts.size();++i)if(std::find(order.begin(),order.end(),i)==order.end())order.push_back(i);
- for(auto index:order)if(index<profile->shortcuts.size()){LVITEMW item{};item.mask=LVIF_TEXT;item.iItem=ListView_GetItemCount(list);item.pszText=profile->shortcuts[index].title.data();int row=ListView_InsertItem(list,&item);auto chord=formatChord(profile->shortcuts[index].chord);ListView_SetItemText(list,row,1,chord.data());ListView_SetCheckState(list,row,std::find(dock.shortcuts.begin(),dock.shortcuts.end(),index)!=dock.shortcuts.end());}}
+ for(auto index:order)if(index<profile->shortcuts.size()){LVITEMW item{};item.mask=LVIF_TEXT;item.iItem=ListView_GetItemCount(list);item.pszText=profile->shortcuts[index].title.data();int row=ListView_InsertItem(list,&item);auto chord=shortcutActionText(profile->shortcuts[index]);ListView_SetItemText(list,row,1,chord.data());ListView_SetCheckState(list,row,std::find(dock.shortcuts.begin(),dock.shortcuts.end(),index)!=dock.shortcuts.end());}}
  SetWindowTextW(status,profile?L"Activate this application to show its dock.":L"Choose an application profile first.");changed=false;loading=false;updateActions();
 }
 void DockSettings::move(int direction){
  int row=ListView_GetNextItem(list,-1,LVNI_SELECTED),next=row+direction;if(row<0||next<0||next>=static_cast<int>(order.size()))return;
  bool checked=ListView_GetCheckState(list,row)!=FALSE,other=ListView_GetCheckState(list,next)!=FALSE;auto* profile=findProfile(app.store,key);if(!profile)return;std::swap(order[row],order[next]);loading=true;
- for(int current:{row,next}){auto index=order[current];ListView_SetItemText(list,current,0,profile->shortcuts[index].title.data());auto chord=formatChord(profile->shortcuts[index].chord);ListView_SetItemText(list,current,1,chord.data());}
+ for(int current:{row,next}){auto index=order[current];ListView_SetItemText(list,current,0,profile->shortcuts[index].title.data());auto chord=shortcutActionText(profile->shortcuts[index]);ListView_SetItemText(list,current,1,chord.data());}
  ListView_SetCheckState(list,row,other);ListView_SetCheckState(list,next,checked);ListView_SetItemState(list,row,0,LVIS_SELECTED|LVIS_FOCUSED);ListView_SetItemState(list,next,LVIS_SELECTED|LVIS_FOCUSED,LVIS_SELECTED|LVIS_FOCUSED);ListView_EnsureVisible(list,next,FALSE);loading=false;mark();
 }
 void DockSettings::apply(){

@@ -27,7 +27,7 @@ void App::populateShortcutTiles(){
   bool collapsed=!categorySearch&&GetPrivateProfileIntW(section.c_str(),preferenceKey(name).c_str(),0,prefs.c_str())!=0;shortcutCategories.push_back({name,collapsed});
   LVGROUP group{sizeof(group)};group.mask=LVGF_HEADER|LVGF_GROUPID|LVGF_STATE|LVGF_ALIGN;group.pszHeader=name.data();group.iGroupId=groupId;group.uAlign=LVGA_HEADER_LEFT;group.stateMask=LVGS_COLLAPSIBLE|LVGS_COLLAPSED;group.state=LVGS_COLLAPSIBLE|(collapsed?LVGS_COLLAPSED:0);ListView_InsertGroup(rows,-1,&group);
  }
- auto label=shortcut.title+L" — "+formatChord(shortcut.chord)+L" ("+name+L")";LVITEMW item{};item.mask=LVIF_TEXT|LVIF_GROUPID;item.iItem=static_cast<int>(i);item.iGroupId=groupId;item.pszText=label.data();ListView_InsertItem(rows,&item);
+ auto label=shortcut.title+L" — "+shortcutActionText(shortcut)+L" ("+name+L")";LVITEMW item{};item.mask=LVIF_TEXT|LVIF_GROUPID;item.iItem=static_cast<int>(i);item.iGroupId=groupId;item.pszText=label.data();ListView_InsertItem(rows,&item);
  }
 }
 void App::syncCategoryStates(){

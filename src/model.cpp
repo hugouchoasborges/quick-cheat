@@ -4,6 +4,7 @@
 #include <sstream>
 #include <set>
 #include <winnls.h>
+#include <winhttp.h>
 namespace qc {
 namespace {
 struct NamedKey { const wchar_t* name; WORD key; };
@@ -90,10 +91,16 @@ const Profile* findProfile(const Store& store,const std::wstring& key){auto foun
 void removeDockShortcut(Profile& profile,size_t erasedIndex){auto& indices=profile.dock.shortcuts;std::erase(indices,erasedIndex);for(auto& index:indices)if(index>erasedIndex)--index;}
 bool matchesShortcut(const Shortcut& shortcut,const std::wstring& query) {
  auto normalized=[](std::wstring s){for(auto& c:s)c=c==L'+'?L' ':static_cast<wchar_t>(towlower(c));return s;};
- auto haystack=normalized(shortcut.title+L" "+shortcut.category+L" "+formatChord(shortcut.chord));
+ auto haystack=normalized(shortcut.title+L" "+shortcut.category+L" "+shortcutActionText(shortcut)+L" "+shortcut.url);
  std::wistringstream words(normalized(query));std::wstring word;
  while(words>>word)if(haystack.find(word)==haystack.npos)return false;return true;
 }
+bool validWebUrl(const std::wstring& url){
+ if(url.empty()||url.size()>2048)return false;for(auto c:url)if(c<=32||c==127||c==L'"'||c==L'\\')return false;
+ URL_COMPONENTS parts{};parts.dwStructSize=sizeof(parts);parts.dwHostNameLength=parts.dwUserNameLength=parts.dwPasswordLength=static_cast<DWORD>(-1);
+ return WinHttpCrackUrl(url.c_str(),static_cast<DWORD>(url.size()),0,&parts)&&(parts.nScheme==INTERNET_SCHEME_HTTP||parts.nScheme==INTERNET_SCHEME_HTTPS)&&parts.dwHostNameLength>0&&!parts.dwUserNameLength&&!parts.dwPasswordLength;
+}
+std::wstring shortcutActionText(const Shortcut& shortcut){return shortcut.url.empty()?formatChord(shortcut.chord):L"Open URL";}
 bool validStore(const Store& s) {
  if(static_cast<UINT>(s.theme)>2||s.profiles.size()>256||!validChord(s.trigger)||!s.trigger.modifiers||s.trigger.key==VK_F12)return false;
  std::set<std::wstring> apps;size_t count=0,workflowCount=0,stepCount=0;
@@ -102,17 +109,17 @@ bool validStore(const Store& s) {
  if(!p.website.empty()&&(!isBrowserExecutable(p.executable)||normalizeWebsite(p.website)!=p.website))return false;
  const auto& dock=p.dock;if(dock.scale<50||dock.scale>200||dock.opacity<20||dock.opacity>100||dock.x<-32768||dock.x>32767||dock.y<-32768||dock.y>32767||dock.shortcuts.size()>64)return false;
  std::set<size_t> indices;for(auto index:dock.shortcuts)if(index>=p.shortcuts.size()||!indices.insert(index).second)return false;
- for(const auto& k:p.shortcuts)if(trim(k.title).empty()||k.title.size()>240||k.category.size()>80||!validChord(k.chord)||++count>20000)return false;
+ for(const auto& k:p.shortcuts)if(trim(k.title).empty()||k.title.size()>240||k.category.size()>80||k.dockLabel.size()>120||(k.url.empty()?!validChord(k.chord):p.website.empty()||!validWebUrl(k.url)||k.chord.key||k.chord.modifiers)||++count>20000)return false;
  if(p.workflows.size()>256)return false;
  for(const auto& flow:p.workflows){if(trim(flow.title).empty()||flow.title.size()>240||flow.steps.empty()||flow.steps.size()>128||++workflowCount>4096)return false;for(const auto& step:flow.steps)if(trim(step).empty()||step.size()>4096||++stepCount>20000)return false;}
  }return true;
 }
 std::wstring serialize(const Store& s) {
- std::wostringstream out;out<<L"QC\t4\nH\t"<<s.trigger.modifiers<<L'\t'<<s.trigger.key<<L"\nT\t"<<static_cast<UINT>(s.theme)<<L'\n';
+ std::wostringstream out;out<<L"QC\t5\nH\t"<<s.trigger.modifiers<<L'\t'<<s.trigger.key<<L"\nT\t"<<static_cast<UINT>(s.theme)<<L'\n';
  for(const auto& p:s.profiles) {
  out<<L"P\t"<<escape(p.executable)<<L'\t'<<escape(p.name)<<L'\t'<<escape(p.website)<<L'\n';
  const auto& dock=p.dock;out<<L"O\t"<<dock.enabled<<L'\t'<<dock.vertical<<L'\t'<<dock.collapsed<<L'\t'<<dock.scale<<L'\t'<<dock.opacity<<L'\t'<<dock.x<<L'\t'<<dock.y<<L'\n';for(auto index:dock.shortcuts)out<<L"K\t"<<index<<L'\n';
- for(const auto& k:p.shortcuts)out<<L"S\t"<<escape(k.title)<<L'\t'<<escape(k.category)<<L'\t'<<k.chord.modifiers<<L'\t'<<k.chord.key<<L'\n';
+ for(const auto& k:p.shortcuts)out<<L"S\t"<<escape(k.title)<<L'\t'<<escape(k.category)<<L'\t'<<k.chord.modifiers<<L'\t'<<k.chord.key<<L'\t'<<escape(k.url)<<L'\t'<<escape(k.dockLabel)<<L'\n';
  for(const auto& flow:p.workflows){out<<L"W\t"<<escape(flow.title)<<L'\n';for(const auto& step:flow.steps)out<<L"D\t"<<escape(step)<<L'\n';out<<L"F\n";}
  out<<L"E\n";
  }out<<L"Z\n";return out.str();
@@ -120,12 +127,12 @@ std::wstring serialize(const Store& s) {
 bool deserialize(const std::wstring& data,Store& target) {
  // Valid UTF-8 never decodes into more UTF-16 units than its byte count.
  if(data.size()>maxStoreBytes||data.find(L'\0')!=data.npos)return false;
- auto lines=split(data,L'\n');if(lines.size()<4||(lines[0]!=L"QC\t1"&&lines[0]!=L"QC\t2"&&lines[0]!=L"QC\t3"&&lines[0]!=L"QC\t4")||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
+ auto lines=split(data,L'\n');if(lines.size()<4||(lines[0]!=L"QC\t1"&&lines[0]!=L"QC\t2"&&lines[0]!=L"QC\t3"&&lines[0]!=L"QC\t4"&&lines[0]!=L"QC\t5")||!lines.back().empty()||lines[lines.size()-2]!=L"Z")return false;
  Store s;auto header=split(lines[1],L'\t');UINT key=0;
  if(header.size()!=3||header[0]!=L"H"||!number(header[1],s.trigger.modifiers)||!number(header[2],key))return false;s.trigger.key=static_cast<WORD>(key);
  size_t start=2;
  if(lines[0]!=L"QC\t1"){auto theme=split(lines[2],L'\t');UINT mode=0;if(theme.size()!=2||theme[0]!=L"T"||!number(theme[1],mode)||mode>2)return false;s.theme=static_cast<ThemeMode>(mode);start=3;}
- bool inProfile=false,inWorkflow=false,dockSeen=false;const bool version4=lines[0]==L"QC\t4";
+ bool inProfile=false,inWorkflow=false,dockSeen=false;const bool version5=lines[0]==L"QC\t5",version4=version5||lines[0]==L"QC\t4";
  for(size_t i=start;i+2<lines.size();++i) {
  auto row=split(lines[i],L'\t');
  if(row[0]==L"P"&&row.size()==(version4?4:3)&&!inProfile) {
@@ -134,9 +141,9 @@ bool deserialize(const std::wstring& data,Store& target) {
  auto& dock=s.profiles.back().dock;UINT enabled{},vertical{},collapsed{};auto signedValue=[](const std::wstring& value,int& out){bool negative=!value.empty()&&value[0]==L'-';UINT n{};if(!number(negative?value.substr(1):value,n)||n>(negative?32768u:32767u))return false;out=negative?-static_cast<int>(n):static_cast<int>(n);return true;};
  if(!number(row[1],enabled)||enabled>1||!number(row[2],vertical)||vertical>1||!number(row[3],collapsed)||collapsed>1||!number(row[4],dock.scale)||!number(row[5],dock.opacity)||!signedValue(row[6],dock.x)||!signedValue(row[7],dock.y))return false;dock.enabled=enabled!=0;dock.vertical=vertical!=0;dock.collapsed=collapsed!=0;dockSeen=true;
  }else if(row[0]==L"K"&&row.size()==2&&version4&&inProfile&&!inWorkflow&&dockSeen){UINT index{};if(!number(row[1],index)||s.profiles.back().dock.shortcuts.size()>=64)return false;s.profiles.back().dock.shortcuts.push_back(index);
- }else if(row[0]==L"S"&&row.size()==5&&inProfile&&!inWorkflow) {
+ }else if(row[0]==L"S"&&row.size()==(version5?7:5)&&inProfile&&!inWorkflow) {
  Shortcut k;if(!unescape(row[1],k.title)||!unescape(row[2],k.category)||!number(row[3],k.chord.modifiers)||!number(row[4],key))return false;
- k.chord.key=static_cast<WORD>(key);s.profiles.back().shortcuts.push_back(std::move(k));
+ k.chord.key=static_cast<WORD>(key);if(version5&&(!unescape(row[5],k.url)||!unescape(row[6],k.dockLabel)))return false;s.profiles.back().shortcuts.push_back(std::move(k));
  }else if(row[0]==L"W"&&row.size()==2&&inProfile&&!inWorkflow&&(lines[0]==L"QC\t3"||version4)){
  Workflow flow;if(!unescape(row[1],flow.title)||s.profiles.back().workflows.size()>=256)return false;s.profiles.back().workflows.push_back(std::move(flow));inWorkflow=true;
  }else if(row[0]==L"D"&&row.size()==2&&inWorkflow){std::wstring step;if(!unescape(row[1],step)||s.profiles.back().workflows.back().steps.size()>=128)return false;s.profiles.back().workflows.back().steps.push_back(std::move(step));

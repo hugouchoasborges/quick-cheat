@@ -11,9 +11,9 @@ bool Editor::pendingPageEdits() const{
  if(page==3)return dockSettings&&dockSettings->pending();
  if(page==2)return app.workflowEditor&&(app.workflowEditor->dirty||app.workflowEditor->pendingStep);
  if(page==0)return textOf(trigger)!=formatChord(draft.trigger);
- auto description=textOf(title),group=textOf(category),combination=textOf(keys);
- if(profileIndex>=0&&shortcutIndex>=0&&shortcutIndex<static_cast<int>(draft.profiles[profileIndex].shortcuts.size())){const auto& saved=draft.profiles[profileIndex].shortcuts[shortcutIndex];return description!=saved.title||group!=saved.category||combination!=formatChord(saved.chord);}
- return !description.empty()||!combination.empty();
+ auto description=textOf(title),group=textOf(category),combination=textOf(keys),dockLabel=textOf(GetDlgItem(window,DockLabel));bool url=SendMessageW(GetDlgItem(window,ActionType),CB_GETCURSEL,0,0)==1;
+ if(profileIndex>=0&&shortcutIndex>=0&&shortcutIndex<static_cast<int>(draft.profiles[profileIndex].shortcuts.size())){const auto& saved=draft.profiles[profileIndex].shortcuts[shortcutIndex];return description!=saved.title||group!=saved.category||combination!=(saved.url.empty()?formatChord(saved.chord):saved.url)||url!=(!saved.url.empty())||dockLabel!=saved.dockLabel;}
+ return !description.empty()||!combination.empty()||!dockLabel.empty()||url;
 }
 bool Editor::leavePage(){
  if(page==3&&dockSettings&&!dockSettings->discard())return false;
@@ -47,14 +47,14 @@ void Editor::openWorkflows(const std::wstring& key){
 void Editor::close(){app.hidePopup();}
 void Editor::layout(){
  if(!window)return;UINT dpi=GetDpiForWindow(window);RECT r;GetClientRect(window,&r);int viewWidth=MulDiv(r.right,96,dpi),viewHeight=MulDiv(r.bottom,96,dpi);
- int width=(std::max)(viewWidth,980),height=(std::max)(viewHeight,714)+66;
+ int width=(std::max)(viewWidth,980),height=(std::max)(viewHeight,page==1?810:714)+66;
  scrollX=std::clamp(scrollX,0,(std::max)(0,width-viewWidth));scrollY=std::clamp(scrollY,0,(std::max)(0,height-66-viewHeight));
  SCROLLINFO horizontal{sizeof(horizontal),SIF_RANGE|SIF_PAGE|SIF_POS,0,width-1,static_cast<UINT>(viewWidth),scrollX};SetScrollInfo(window,SB_HORZ,&horizontal,TRUE);
  SCROLLINFO vertical{sizeof(vertical),SIF_RANGE|SIF_PAGE|SIF_POS,0,height-67,static_cast<UINT>(viewHeight),scrollY};SetScrollInfo(window,SB_VERT,&vertical,TRUE);
  auto make=[&](int size,int weight){return CreateFontW(-MulDiv(size,dpi,96),0,0,0,weight,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,CLEARTYPE_QUALITY,0,L"Segoe UI");};HFONT next=make(14,FW_NORMAL),nextHeading=make(25,FW_SEMIBOLD),nextCaption=make(12,FW_NORMAL);
  for(HWND c=GetWindow(window,GW_CHILD);c;c=GetWindow(c,GW_HWNDNEXT))SendMessageW(c,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);
  SendMessageW(GetDlgItem(window,PageTitle),WM_SETFONT,reinterpret_cast<WPARAM>(nextHeading),TRUE);
- for(int id:std::initializer_list<int>{PageSubtitle,LabelApp,LabelTitle,LabelCategory,LabelKeys,Status,ThemeHelp,TriggerHelp,DataHelp})SendMessageW(GetDlgItem(window,id),WM_SETFONT,reinterpret_cast<WPARAM>(nextCaption),TRUE);
+ for(int id:std::initializer_list<int>{PageSubtitle,LabelApp,LabelTitle,LabelCategory,LabelKeys,Status,ThemeHelp,TriggerHelp,DataHelp,LabelActionType,LabelDockLabel})SendMessageW(GetDlgItem(window,id),WM_SETFONT,reinterpret_cast<WPARAM>(nextCaption),TRUE);
  if(font)DeleteObject(font);if(headingFont)DeleteObject(headingFont);if(captionFont)DeleteObject(captionFont);font=next;headingFont=nextHeading;captionFont=nextCaption;
  auto place=[&](int id,int x,int y,int w,int h){bounds(GetDlgItem(window,id),x-scrollX,y-66-scrollY,w,h,dpi);};auto visible=[&](int id,bool show){ShowWindow(GetDlgItem(window,id),show?SW_SHOWNA:SW_HIDE);};
  visible(PageTitle,false);visible(PageSubtitle,false);
@@ -75,8 +75,12 @@ void Editor::layout(){
  place(Entries,28,278,left,height-376);place(FormTitle,right,272,fieldWidth,26);
  place(LabelTitle,right,316,fieldWidth,20);place(Title,right+4,344,fieldWidth-8,28);
  place(LabelCategory,right,392,fieldWidth,20);place(Category,right,420,fieldWidth,220);
- place(LabelKeys,right,468,fieldWidth,20);place(Keys,right+4,500,fieldWidth-100,28);place(Record,right+fieldWidth-84,496,84,36);
- place(Save,right,550,fieldWidth,38);place(New,right,602,(fieldWidth-12)/2,32);place(Delete,right+(fieldWidth+12)/2,602,(fieldWidth-12)/2,32);
+ place(LabelActionType,right,462,fieldWidth,20);place(ActionType,right,486,fieldWidth,180);
+ bool url=SendMessageW(GetDlgItem(window,ActionType),CB_GETCURSEL,0,0)==1;
+ place(LabelKeys,right,530,fieldWidth,20);place(Keys,right+4,558,fieldWidth-(url?8:100),28);place(Record,right+fieldWidth-84,554,84,36);visible(Record,page==1&&!url);
+ place(LabelDockLabel,right,602,fieldWidth,20);place(DockLabel,right+4,628,fieldWidth-8,28);
+ place(Save,right,678,fieldWidth,38);place(New,right,730,(fieldWidth-12)/2,32);place(Delete,right+(fieldWidth+12)/2,730,(fieldWidth-12)/2,32);
+ for(int id:{LabelActionType,ActionType,LabelDockLabel,DockLabel})visible(id,page==1);EnableWindow(GetDlgItem(window,ActionType),profileIndex>=0&&!draft.profiles[profileIndex].website.empty());EnableWindow(GetDlgItem(window,DockLabel),profileIndex>=0);
  place(RemoveProfile,28,height-80,176,30);place(Status,28,height-30,width-56,22);place(EmptyFlows,48,304,width-96,80);
  if(app.workflowEditor&&app.workflowEditor->window){bounds(app.workflowEditor->window,-scrollX,186-scrollY,width,height-260,dpi);ShowWindow(app.workflowEditor->window,page==2&&profileIndex>=0?SW_SHOWNA:SW_HIDE);}
  if(dockSettings){if(page==3&&profileIndex>=0)dockSettings->layout(MulDiv(28-scrollX,dpi,96),MulDiv(186-scrollY,dpi,96),MulDiv(width-56,dpi,96),MulDiv(height-260,dpi,96),dpi);else dockSettings->hide();}
@@ -89,7 +93,7 @@ void Editor::paint(){
  if(page==0){line(270,px(40),r.right-px(40));line(382,px(40),r.right-px(40));}
  else{line(252,px(28),r.right-px(28));if(page==1){int x=r.right-px(376);MoveToEx(dc,x,px(278),nullptr);LineTo(dc,x,r.bottom-px(98));}}
  SelectObject(dc,old);DeleteObject(pen);
- for(auto field:{title,keys,trigger})if(IsWindowVisible(field)){RECT bounds{};GetWindowRect(field,&bounds);MapWindowPoints(nullptr,window,reinterpret_cast<POINT*>(&bounds),2);OffsetRect(&bounds,px(scrollX),px(scrollY+66));InflateRect(&bounds,px(4),px(4));rounded(dc,bounds,c.field,GetFocus()==field?c.accent:c.border,px(8));}
+ for(auto field:{title,keys,trigger,GetDlgItem(window,DockLabel)})if(IsWindowVisible(field)){RECT bounds{};GetWindowRect(field,&bounds);MapWindowPoints(nullptr,window,reinterpret_cast<POINT*>(&bounds),2);OffsetRect(&bounds,px(scrollX),px(scrollY+66));InflateRect(&bounds,px(4),px(4));rounded(dc,bounds,c.field,GetFocus()==field?c.accent:c.border,px(8));}
  EndPaint(window,&ps);
 }
 void Editor::scroll(UINT message,WPARAM value){

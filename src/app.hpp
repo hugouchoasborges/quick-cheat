@@ -4,7 +4,7 @@
 #include <commctrl.h>
 #include <memory>
 namespace qc {
-constexpr wchar_t version[]=L"0.6.0-alpha.2";
+constexpr wchar_t version[]=L"0.6.0-alpha.3";
 constexpr UINT ForegroundChanged=WM_APP+1, TrayMessage=WM_APP+2, ExecuteRow=WM_APP+3,BrowserChanged=WM_APP+4,BrowserDirty=WM_APP+5;
 constexpr int PopupContentTop=50,PopupTabsHeight=34,PopupFooterHeight=38;
 constexpr UINT CmdOpen=100,CmdManage=101,CmdData=102,CmdExit=103,CmdNew=104,CmdExecute=105,CmdShortcuts=106,CmdWorkflows=107,CmdManageWorkflows=108,CmdExpand=109,CmdPin=110,CmdPopupClose=111,CmdBack=112,CmdCommunity=113;
@@ -20,7 +20,7 @@ struct App {
  std::unique_ptr<NativeBrowserContext> browser;std::unique_ptr<Dock> dock;
  std::unique_ptr<CommunityWindow> community;
  Profile contextProfile;bool contextDirty{true},hasContextProfile{};size_t browserShortcutCount{},browserWorkflowCount{};
- bool pendingExecution{},pendingPopupOpen{},browserTimerPending{};Chord pendingChord;Target pendingTarget;unsigned long long pendingGeneration{},openingGeneration{};
+ bool pendingExecution{},pendingPopupOpen{},browserTimerPending{};Shortcut pendingShortcut;Target pendingTarget;unsigned long long pendingGeneration{},openingGeneration{};
  HWND pressedWindow{};DWORD pressedProcess{};int pressedRow{-1};
  HWND workflowTree{},workflowDetail{},shortcutDetail{};bool workflowsVisible{},refreshingWorkflows{};
  SIZE popupSize{1040,760};bool popupExpanded{},popupSizing{};
@@ -30,7 +30,7 @@ struct App {
  std::unique_ptr<Editor> editor;std::vector<size_t> visibleRows;bool trayAdded{};int hotkeyId{1};UINT taskbarCreated{};
  App();~App();
  bool start(HINSTANCE instance);
- void onForeground(HWND window);void requestWebsite();void receiveWebsite();void runShortcut(Chord chord,const std::wstring& expectedWebsite={});void showPopupNow();
+ void onForeground(HWND window);void requestWebsite();void receiveWebsite();void runShortcut(const Shortcut& shortcut,const std::wstring& expectedWebsite={});void showPopupNow();
  void togglePopup();void hidePopup(bool restore=true);void refreshPopup(bool clearSearch=false);void createPopup();void layoutPopup();void drawRow(DRAWITEMSTRUCT* item);void applyTheme();
  void openEditor(int page=1);void closeSettings();void execute(size_t visibleIndex);void trayMenu();void addTray();
  void positionPopup(bool opening);void togglePopupSize();void rememberPopupSize();void layoutShortcutTiles();void updateShortcutDetail();void populateShortcutTiles();int selectedShortcut() const;void selectShortcut(int index);
@@ -50,6 +50,7 @@ struct Editor {
  void show();void layout();void scroll(UINT message,WPARAM value);void revealFocus();void refreshProfiles();void refreshList();void loadSelection();void clearFields();
  void addProfile();void addWebsite();void saveShortcut();void deleteShortcut();void deleteProfile();void applyTrigger();void applyAppearance();void paint();void drawEntry(DRAWITEMSTRUCT* item);
  void populateCategories();bool persist();
+ void updateShortcutAction(bool clear=false);
  bool leavePage();bool selectPage(int next);bool selectProfile(int next);bool updateWorkflowPage();void openWorkflows(const std::wstring& key);void close();
  bool pendingPageEdits() const;void importApplicationCollection();void exportApplicationCollection();void updateCollectionActions();
  bool installCollection(const Collection& collection);
@@ -59,6 +60,7 @@ struct Editor {
 Target identify(HWND window);
 bool targetAlive(const Target& target);
 bool sendChord(const Target& target,Chord chord,std::wstring& error);
+bool sendWebsiteUrl(const Target& target,const std::wstring& url,std::wstring& error);
 std::wstring textOf(HWND control);
 HWND control(HWND parent,const wchar_t* cls,const wchar_t* text,DWORD style,int id);
 void bounds(HWND window,int x,int y,int width,int height,UINT dpi);

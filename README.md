@@ -68,9 +68,13 @@ See the [format and limits](docs/collection-format.md) and [acceptance checklist
 
 ## Dock and websites
 
-The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.2 candidate** retains it; the public download remains alpha.3.
+The compact layout introduced in **0.5.0-alpha.4** combines context, search and icons in one row, with inline bottom actions. The local **0.6.0-alpha.3 candidate** adds website URLs and Dock labels; the public download remains alpha.3.
 
-Local alpha.2 fixes **Ctrl + backslash** on ABNT2. Type `Ctrl+\` or use **Record**; the ABNT2 key appears as `Ctrl+IntlBackslash`. Existing `Backslash` shortcuts keep their original key. See [validation](docs/validation-0.6.0-alpha.2.md); screenshots below show the unchanged alpha.1 layout.
+On a website profile, choose **Open URL**, enter a full HTTP(S) address and save. Execute or a Dock click opens it in the **same tab of the active browser**, after checking the source website. **Dock label (optional)** changes only the Dock button text; leave empty for the original title/action text. Add the saved action through Settings > Dock as usual. See [validation](docs/validation-0.6.0-alpha.3.md).
+
+![Website URL and Dock label — local alpha.3, DEMO data](docs/images/v0.6.0-alpha.3/website-editor-dark.png)
+
+Local alpha.2 fixes **Ctrl + backslash** on ABNT2. Type `Ctrl+\` or use **Record**; the ABNT2 key appears as `Ctrl+IntlBackslash`. Existing `Backslash` shortcuts keep their original key. See [validation](docs/validation-0.6.0-alpha.2.md). Older screenshots below are labeled by their candidate version.
 
 ![Compact native popup — local 0.6 candidate, DEMO data](docs/images/v0.6.0-alpha.1/popup-dark.png)
 
@@ -136,7 +140,7 @@ Select a workflow's name in the popup to read all its steps in order, with numbe
 
 ### Upgrading from 0.1.x
 
-Exit Quick Cheat before replacing the executable. This release reads existing v1/v2/v3 data and writes v4 on the next save, preserving `shortcuts.qc.pre-v4.bak` first. Older releases cannot read v4. To roll back, exit the app, keep a copy of the upgraded data folder and restore that pre-v4 backup as `shortcuts.qc`. Website/dock changes made in v4 will not exist in the older backup. Full backups include `attachments` and `ui-state.ini`.
+Exit Quick Cheat before replacing the executable. The public 0.5 release writes v4 and preserves a pre-v4 backup. The local 0.6 alpha.3 reads v1–v4 and writes **v5 on the next save**, preserving `shortcuts.qc.pre-v5.bak` first. Older releases cannot read v5. To roll back, exit, keep a copy of the upgraded folder and restore the appropriate pre-migration backup as `shortcuts.qc`; later changes will not exist in that backup. Full backups include `attachments` and `ui-state.ini`.
 
 ## Build from source
 

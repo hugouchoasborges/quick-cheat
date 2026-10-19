@@ -21,7 +21,7 @@ void Dock::refresh(){
  if(key!=profileKey(*profile))page=0;key=profileKey(*profile);targetWindow=app.target.window;targetProcess=app.target.process;
  if(!window){WNDCLASSW cls{};cls.hInstance=app.instance;cls.lpfnWndProc=proc;cls.lpszClassName=L"QuickCheatDock";cls.hCursor=LoadCursorW(nullptr,IDC_SIZEALL);RegisterClassW(&cls);
  window=CreateWindowExW(WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE|WS_EX_TOPMOST|WS_EX_LAYERED,cls.lpszClassName,L"Quick Cheat dock",WS_POPUP|WS_BORDER,0,0,1,1,nullptr,nullptr,app.instance,this);if(!window)return;}
- dpi=GetDpiForWindow(app.target.window);MONITORINFO work{sizeof(work)};GetMonitorInfoW(MonitorFromWindow(app.target.window,MONITOR_DEFAULTTONEAREST),&work);std::wstring stamp=key+L"/"+std::to_wstring(dpi)+L"/"+std::to_wstring(profile->dock.scale)+L"/"+std::to_wstring(profile->dock.vertical)+L"/"+std::to_wstring(profile->dock.collapsed)+L"/"+std::to_wstring(work.rcWork.right-work.rcWork.left)+L"/"+std::to_wstring(work.rcWork.bottom-work.rcWork.top);for(auto index:profile->dock.shortcuts)if(index<profile->shortcuts.size()){auto& shortcut=profile->shortcuts[index];stamp+=L"/"+std::to_wstring(index)+L":"+std::to_wstring(shortcut.title.size())+L":"+shortcut.title+formatChord(shortcut.chord);}if(stamp!=renderKey){rebuild(*profile);renderKey=std::move(stamp);}
+ dpi=GetDpiForWindow(app.target.window);MONITORINFO work{sizeof(work)};GetMonitorInfoW(MonitorFromWindow(app.target.window,MONITOR_DEFAULTTONEAREST),&work);std::wstring stamp=key+L"/"+std::to_wstring(dpi)+L"/"+std::to_wstring(profile->dock.scale)+L"/"+std::to_wstring(profile->dock.vertical)+L"/"+std::to_wstring(profile->dock.collapsed)+L"/"+std::to_wstring(work.rcWork.right-work.rcWork.left)+L"/"+std::to_wstring(work.rcWork.bottom-work.rcWork.top);for(auto index:profile->dock.shortcuts)if(index<profile->shortcuts.size()){auto& shortcut=profile->shortcuts[index];stamp+=L"/"+std::to_wstring(index)+L":"+std::to_wstring(shortcut.title.size())+L":"+shortcut.title+shortcutActionText(shortcut)+shortcut.url+L"/"+shortcut.dockLabel;}if(stamp!=renderKey){rebuild(*profile);renderKey=std::move(stamp);}
  RECT target{};GetWindowRect(app.target.window,&target);RECT rect{};GetWindowRect(window,&rect);int width=rect.right-rect.left,height=rect.bottom-rect.top;
  int x=target.left+(profile->dock.x<0?MulDiv(24,dpi,96):MulDiv(profile->dock.x,dpi,96));int y=target.top+(profile->dock.y<0?MulDiv(80,dpi,96):MulDiv(profile->dock.y,dpi,96));
  MONITORINFO monitor{sizeof(monitor)};GetMonitorInfoW(MonitorFromWindow(app.target.window,MONITOR_DEFAULTTONEAREST),&monitor);x=std::clamp<int>(x,monitor.rcWork.left,std::max(monitor.rcWork.left,monitor.rcWork.right-width));y=std::clamp<int>(y,monitor.rcWork.top,std::max(monitor.rcWork.top,monitor.rcWork.bottom-height));
@@ -50,7 +50,7 @@ void Dock::rebuild(const Profile& profile){
   EnableWindow(add(L"Previous",Previous,navX,pad,navWidth,height),page>0);EnableWindow(add(L"Next",Next,navX+navWidth+pad,pad,navWidth,height),page+1<pageCount);
   for(size_t i=begin;i<end;++i){size_t offset=i-begin;int column=static_cast<int>(profile.dock.vertical?offset/rows:offset%columns),row=static_cast<int>(profile.dock.vertical?offset%rows:offset/columns);positions[i]={left+column*(buttonWidth+pad),top+row*(height+pad)};}
  }else page=0;
- if(!profile.dock.collapsed)for(size_t i=begin;i<end;++i){const auto& shortcut=profile.shortcuts[items[i]];add(shortcut.title+L"  "+formatChord(shortcut.chord),FirstShortcut+static_cast<int>(items[i]),positions[i].x,positions[i].y,buttonWidth,height);}
+ if(!profile.dock.collapsed)for(size_t i=begin;i<end;++i){const auto& shortcut=profile.shortcuts[items[i]];auto text=shortcut.dockLabel.empty()?shortcut.title+L"  "+shortcutActionText(shortcut):shortcut.dockLabel;add(text,FirstShortcut+static_cast<int>(items[i]),positions[i].x,positions[i].y,buttonWidth,height);}
  SetWindowLongPtrW(window,GWL_STYLE,GetWindowLongPtrW(window,GWL_STYLE)&~(WS_HSCROLL|WS_VSCROLL));
  SetWindowPos(window,nullptr,0,0,std::min(maxRight+pad,availableWidth)+border,std::min(maxBottom+pad,availableHeight)+border,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);app.theme.style(window);
  tips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP,0,0,0,0,window,nullptr,app.instance,nullptr);
@@ -62,7 +62,7 @@ void Dock::execute(size_t index){
  if(app.target.window!=targetWindow||app.target.process!=targetProcess||GetForegroundWindow()!=targetWindow||!targetAlive(app.target))return;
  auto* profile=findProfile(app.store,key);if(!profile||index>=profile->shortcuts.size())return;
  if(!profile->website.empty()&&profile->website!=app.target.website)return;
- app.runShortcut(profile->shortcuts[index].chord,profile->website);
+ app.runShortcut(profile->shortcuts[index],profile->website);
 }
 LRESULT CALLBACK Dock::buttonProc(HWND h,UINT m,WPARAM w,LPARAM l,UINT_PTR,DWORD_PTR){
  constexpr wchar_t pressed[]=L"QcDockPressed";

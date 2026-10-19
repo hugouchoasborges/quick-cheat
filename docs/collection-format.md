@@ -1,4 +1,12 @@
-# Portable collections — format 2 (0.4 candidate)
+# Portable collections — format 3 (0.6 alpha.3 candidate)
+
+Format 3 adds `url` (HTTP(S), up to 2048 characters) and `dockLabel` (optional,
+up to 120 characters) to each shortcut. Empty URL means a keyboard action; a URL
+requires a website profile and zero key/modifiers, and opens in the current tab.
+Dock label replaces only the button text. Readers still accept formats 1 and 2
+with empty defaults. Add deduplication includes both fields. Old readers reject 3.
+The version-2 example below remains a valid legacy input; new exports use 3 and
+always include both fields, even when empty.
 
 A `.quickcheat.json` file contains one application's saved shortcuts, workflows and referenced local PNG images. It does not contain global settings, category expansion state, or other applications. The 0.4 candidate uses local store schema v4. Format 1 remains readable.
 

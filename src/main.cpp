@@ -101,7 +101,7 @@ void App::execute(size_t index) {
  auto* p=currentProfile();if(!p||index>=visibleRows.size()||visibleRows[index]>=p->shortcuts.size())return;
  auto chord=p->shortcuts[visibleRows[index]].chord;
  if(chord.key==store.trigger.key&&chord.modifiers==store.trigger.modifiers){error(L"This shortcut is also the Quick Cheat activation shortcut. Change the activation shortcut before running it.");return;}
- runShortcut(chord,!target.website.empty()&&visibleRows[index]>=browserShortcutCount?target.website:L"");
+ runShortcut(p->shortcuts[visibleRows[index]],!target.website.empty()&&visibleRows[index]>=browserShortcutCount?target.website:L"");
 }
 bool App::commit(Store candidate) {
  bool changed=candidate.trigger.key!=store.trigger.key||candidate.trigger.modifiers!=store.trigger.modifiers;int next=hotkeyId==1?2:1;
