@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "browser_app.hpp"
 #include <array>
 namespace qc {
 std::wstring textOf(HWND control) {
@@ -22,6 +23,9 @@ bool targetAlive(const Target& target) {
 }
 bool sendWebsiteUrl(const Target& target,const std::wstring& url,std::wstring& error){
  if(!targetAlive(target)||!isBrowserExecutable(target.executable)||!validWebUrl(url)){error=L"The browser or URL is no longer valid.";return false;}
+ // Installed web apps have no editable omnibox. Ctrl+L followed by text could
+ // reach a page field instead of navigating; keep URL actions in browser tabs.
+ if(hasPackagedAppIdentity(target.window)){error=L"Open this website in a normal browser tab to execute an Open URL shortcut. Installed web apps do not expose a supported address field.";return false;}
  const WORD held[]={VK_CONTROL,VK_MENU,VK_SHIFT,VK_LWIN,VK_RWIN,'L',VK_RETURN};for(WORD key:held)if(GetAsyncKeyState(key)&0x8000){error=L"Release keyboard keys before opening a URL.";return false;}
  if(GetForegroundWindow()!=target.window)SetForegroundWindow(target.window);if(GetForegroundWindow()!=target.window){error=L"Activate the browser before opening this URL.";return false;}
  std::vector<INPUT> input;input.reserve(url.size()*2+6);auto key=[&](WORD value,DWORD flags){INPUT item{};item.type=INPUT_KEYBOARD;item.ki.wVk=value;item.ki.dwFlags=flags;input.push_back(item);};

@@ -1,4 +1,5 @@
 #include "browser_context.hpp"
+#include "browser_app.hpp"
 #include "model.hpp"
 #include <objbase.h>
 #include <oleauto.h>
@@ -27,38 +28,51 @@ std::wstring address(IUIAutomation2* automation,HWND window,DWORD process) {
  if(FAILED(automation->get_RawViewWalker(&walker))||FAILED(automation->CreateCacheRequest(&cache)))return {};
  cache->put_TreeScope(TreeScope_Element);
  for(auto property:{UIA_ControlTypePropertyId,UIA_ClassNamePropertyId,UIA_IsOffscreenPropertyId,UIA_HasKeyboardFocusPropertyId})cache->AddProperty(property);
- struct Node {ComPtr<IUIAutomationElement> element;unsigned depth{};bool toolbar{};};
- std::deque<Node> queue;queue.push_back({root,0,false});ComPtr<IUIAutomationElement> candidate;
+ struct Node {ComPtr<IUIAutomationElement> element;unsigned depth{};bool toolbar{},externalBar{};};
+ std::deque<Node> queue;queue.push_back({root,0,false,false});ComPtr<IUIAutomationElement> candidate;AppOriginEvidence app;bool traversalFailed{},depthTruncated{};
  // Modern Edge chrome can exceed 128 elements before traversal completes,
  // even when the omnibox has already been found. Keep the time bound unchanged.
  constexpr unsigned maxElements=512;unsigned examined{};
  // Walk only the browser chrome. Never descend into a document or renderer host.
  while(!queue.empty()&&examined<maxElements&&GetTickCount64()<deadline){
-  auto node=std::move(queue.front());queue.pop_front();if(node.depth>=9)continue;
+  auto node=std::move(queue.front());queue.pop_front();if(node.depth>=(app.appToolbar?14u:9u)){depthTruncated=true;continue;}
   ComPtr<IUIAutomationElement> child;
-  if(FAILED(walker->GetFirstChildElementBuildCache(node.element.Get(),cache.Get(),&child)))continue;
+  if(FAILED(walker->GetFirstChildElementBuildCache(node.element.Get(),cache.Get(),&child))){traversalFailed=true;continue;}
   while(child&&examined++<maxElements&&GetTickCount64()<deadline){
    CONTROLTYPEID type{};BOOL hidden=TRUE,focused=TRUE;BSTR className{};
-   child->get_CachedControlType(&type);child->get_CachedIsOffscreen(&hidden);child->get_CachedHasKeyboardFocus(&focused);child->get_CachedClassName(&className);
-   bool renderer=className&&wcsstr(className,L"RenderWidgetHost");SysFreeString(className);
+   if(FAILED(child->get_CachedControlType(&type))||FAILED(child->get_CachedIsOffscreen(&hidden))||FAILED(child->get_CachedHasKeyboardFocus(&focused))||FAILED(child->get_CachedClassName(&className)))traversalFailed=true;
+   bool renderer=className&&wcsstr(className,L"RenderWidgetHost");
+   bool appHeader=className&&wcscmp(className,L"WebAppOriginText")==0;
+   bool externalBar=className&&wcscmp(className,L"CustomTabBarTitleOriginView")==0;
+   bool appToolbar=className&&wcscmp(className,L"WebAppFrameToolbarView")==0;SysFreeString(className);
    if(!hidden&&!renderer&&type!=UIA_DocumentControlTypeId){
+    app.appToolbar|=appToolbar;app.externalBarCount+=externalBar;app.tabs+=type==UIA_TabItemControlTypeId;
+    if(appHeader||externalBar||node.externalBar){BSTR name{};if(FAILED(child->get_CurrentName(&name)))traversalFailed=true;
+     if(appHeader){++app.headerCount;if(name&&SysStringLen(name)<=2048)app.header.assign(name,SysStringLen(name));}
+     if((externalBar||node.externalBar)&&name&&SysStringLen(name))app.externalNavigation=true;SysFreeString(name);}
     if(type==UIA_EditControlTypeId&&node.toolbar){
+     app.addressPresent=true;
      // An actively edited address can be an uncommitted URL/search, not the page.
      if(focused||candidate)return {};
      candidate=child;
     }
     if(type==UIA_PaneControlTypeId||type==UIA_GroupControlTypeId||type==UIA_WindowControlTypeId||type==UIA_CustomControlTypeId||type==UIA_ToolBarControlTypeId)
-     queue.push_back({child,node.depth+1,node.toolbar||type==UIA_ToolBarControlTypeId});
+     queue.push_back({child,node.depth+1,node.toolbar||type==UIA_ToolBarControlTypeId,node.externalBar||externalBar});
    }
    ComPtr<IUIAutomationElement> next;
-   if(FAILED(walker->GetNextSiblingElementBuildCache(child.Get(),cache.Get(),&next)))break;
+   if(FAILED(walker->GetNextSiblingElementBuildCache(child.Get(),cache.Get(),&next))){traversalFailed=true;break;}
    child=std::move(next);
   }
  }
  // An incomplete traversal cannot establish that the address field is unique.
- if(!queue.empty()||examined>=maxElements||GetTickCount64()>=deadline||!candidate)return {};
+ if(!queue.empty()||examined>=maxElements||GetTickCount64()>=deadline||traversalFailed)return {};
+ if(!candidate){
+  app.complete=!depthTruncated;std::wstring website;
+  if(app.headerCount==1&&!app.externalNavigation)website=verifiedAppOrigin(app,registeredBrowserAppHost(window));
+  if(!matchesWindow(window,process)||!allowedForeground(window))return {};return website;
+ }
  ComPtr<IUIAutomationValuePattern> value;
- if(FAILED(candidate->GetCurrentPatternAs(UIA_ValuePatternId,IID_PPV_ARGS(&value))))return {};
+ if(FAILED(candidate->GetCurrentPatternAs(UIA_ValuePatternId,IID_PPV_ARGS(&value)))||!value)return {};
  BSTR text{};if(FAILED(value->get_CurrentValue(&text))){SysFreeString(text);return {};}
  if(text&&SysStringLen(text)>2048){SysFreeString(text);return {};}
  std::wstring raw=text?std::wstring(text,SysStringLen(text)):std::wstring{};SysFreeString(text);

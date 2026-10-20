@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0-alpha.6 — local candidate, 2026-10-20
+
+Recognize supported packaged Edge web apps through native browser chrome and
+registered installation metadata, reusing existing website profiles. Unknown,
+ambiguous, multiple-tab or external-navigation chrome falls back to browser-only.
+Keep fresh context verification before executing keyboard shortcuts. Open URL
+actions require an ordinary browser tab. No schema change or publication.
+See [validation](docs/validation-0.6.0-alpha.6.md).
+
 ## 0.6.0-alpha.5 — local candidate, 2026-10-19
 
 Compact Dock: measure each label with its actual font and add 5 px padding per side at 100% DPI/scale, replacing fixed 180×38 buttons. Use 2 px margins/gaps, a 12 px grip, compact collapse/page controls and variable-width packing in both orientations. Vertical mode shares the first row with collapse when possible. Keep paging and bounds; labels ellipsize only when monitor-constrained. Literal ampersands and complete valid labels render consistently with measurement. Previous/Next retain native accessible names while drawing arrows. No configuration/schema changes. Release SkipTests and nine versioned DEMO captures completed; user interaction/DPI acceptance pending. No automated tests or publication. See [evidence](docs/validation-0.6.0-alpha.5.md).
